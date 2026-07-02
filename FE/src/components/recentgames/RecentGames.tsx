@@ -19,7 +19,7 @@ const StyledGameBox =styled(Box)({
     margin:'20px  0 0 10px',
     borderRadius:'10px',
     display:'block',
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
         height:'96px',
         margin:'30px 15px 0px 15px',
     },
@@ -28,7 +28,7 @@ const StyledGameBox =styled(Box)({
 const Gameformat=styled(Box)({
     padding:'25px 0 0 0',
     width:'150px',
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
         padding:'38px 0 0 0',
         width:'200px',
     },
@@ -37,7 +37,7 @@ const Gameformat=styled(Box)({
 const Playertext=styled(Box)({
     padding:'5px 0 0 0px',
     width:'250px',
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
         padding:'16px 0 0 0',
         width:'300px',
     },
@@ -46,7 +46,7 @@ const Playertext=styled(Box)({
 const Outcometext=styled(Box)({
     padding:'25px 0 0 0',
     width:'150px',
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
         padding:'38px 0 0 0',
         width:'200px',
     },
@@ -55,7 +55,7 @@ const Outcometext=styled(Box)({
 const Datetext=styled(Box)({
     padding:'25px',
     width:'200px',
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
         padding:'38px 0 0 0',
         width:'250px',
     },

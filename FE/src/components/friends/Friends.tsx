@@ -16,7 +16,7 @@ const MainBox=styled(Box)({
     borderRadius:'10px',
     padding:'0 2% 0 1%',
     margin:'0 0 20px 0',
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
       height:'125px',
   },
 })
@@ -34,7 +34,7 @@ const FriendText  =styled(Box)({
 const Nametext  =styled(Typography)({
   fontSize:'32px',
   fontWeight:700,
-  [theme.breakpoints.up('laptop')]: {
+  [theme.breakpoints.up('xl')]: {
    fontSize:'40px'
   },
 })
@@ -42,7 +42,7 @@ const Nametext  =styled(Typography)({
 const Desctext  =styled(Typography)({
   fontSize:'16px',
   fontWeight:700,
-  [theme.breakpoints.up('laptop')]: {
+  [theme.breakpoints.up('xl')]: {
     fontSize:'20px'
    },
 })

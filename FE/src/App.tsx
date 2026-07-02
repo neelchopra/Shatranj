@@ -22,7 +22,7 @@ function App() {
   const PageBox=styled(Box)({
     backgroundImage:`require(${bgimg})`,
     margin:'90px 0 0 270px',
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
       margin: '120px 0 0 300px',
       
     },

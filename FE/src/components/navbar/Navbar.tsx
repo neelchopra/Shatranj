@@ -27,7 +27,7 @@ const Navbar = () => {
     fontStyle: 'normal',
     fontWeight: 700,
     lineHeight: 'normal',
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
       fontSize:'32px',
     },
   })
@@ -42,7 +42,7 @@ const Navbar = () => {
     justifyContent:'space-between',
     height:'100%',
     padding: '90px 0 30px 15px',
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
       padding: '120px 0 50px 20px',
     },
   });
@@ -55,7 +55,7 @@ const Navbar = () => {
         "&:hover":{     
           backgroundColor:`${theme.palette.primary.light}`
         }, 
-      [theme.breakpoints.up('laptop')]: {
+      [theme.breakpoints.up('xl')]: {
         paddingLeft: '20px',
       },
   })
@@ -71,7 +71,7 @@ const Navbar = () => {
           zIndex: '0',        
           border: '0px', 
           width:'270px', 
-          [theme.breakpoints.up('laptop')]: {
+          [theme.breakpoints.up('xl')]: {
             width: '300px',
           },
         }}}

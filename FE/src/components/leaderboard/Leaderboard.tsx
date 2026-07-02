@@ -54,7 +54,7 @@ const Leaderboard = ({ players }: { players: LeaderboardPlayer[] }) => {
     position: "relative",
     width: "800px",
     padding: "20px",
-    [theme.breakpoints.up("laptop")]: {
+    [theme.breakpoints.up("xl")]: {
       width: "1050px",
       padding: "30px",
     },

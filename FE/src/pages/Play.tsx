@@ -22,7 +22,7 @@ const FormatBox =styled(Box)({
     alignItems:'start',
     justifyContent:'start',
     textAlign:'start',
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
         margin:'0px 0 30px 150px',
         width:'530px',
         height:'200px',
@@ -36,7 +36,7 @@ const FormatText =styled(Typography)({
     fontSize:'32px',
     fontWeight:700, 
     
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
         fontSize:'36x',
     },  
 })
@@ -44,12 +44,12 @@ const FormatDesc =styled(Typography)({
     color:'white',
     fontSize:'16px',
     fontWeight:700,
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
         fontSize:'18px',
     },  
 })
 const MainBox=styled(Box)({
-    padding:'70px 0 0 40px',[theme.breakpoints.up('laptop')]: {padding:'100px'}
+    padding:'70px 0 0 40px',[theme.breakpoints.up('xl')]: {padding:'100px'}
 })
 
 

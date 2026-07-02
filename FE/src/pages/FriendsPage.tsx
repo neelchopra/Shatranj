@@ -27,7 +27,7 @@ const OuterBox = styled(Box)({
     margin:'90px 0 0 0',
     flexDirection:'column',
 
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
         width: "1078px",
         height:'741px',
     },
@@ -44,7 +44,7 @@ const HeaderBox = styled(Box)({
     display: "flex",
     justifyContent: "center",
     alignItems: 'center',
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
         width: "150px",
     },
 })

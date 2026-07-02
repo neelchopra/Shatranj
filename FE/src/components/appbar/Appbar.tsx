@@ -34,7 +34,7 @@ const Appbar = () => {
 		alignItems: "center",
 		height: "90px",
 		padding: "32px 30px",
-		[theme.breakpoints.up("laptop")]: {
+		[theme.breakpoints.up("xl")]: {
 			height: "120px",
 			padding: "32px 40px",
 		},
@@ -44,7 +44,7 @@ const Appbar = () => {
 		fontWeight: 700,
 		fontSize: "30px",
 		lineHeight: "47px",
-		[theme.breakpoints.up("laptop")]: {
+		[theme.breakpoints.up("xl")]: {
 			fontSize: "40px",
 		},
 	});

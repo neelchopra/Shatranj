@@ -26,7 +26,7 @@ const RecentgameText=styled(Box)({
   padding:'5px 5px 0 10px',
   borderRadius:'10px 10px 0 0',
   fontSize:'16px',
-  [theme.breakpoints.up('laptop')]: {
+  [theme.breakpoints.up('xl')]: {
       fontSize:'20px',
       width:'151px',
       padding:'9px 10px 2px 10px',
@@ -58,7 +58,7 @@ const MainBox=styled(Box)({
       borderRadius:'30px',
       margin:'10px 0 10px 0'
     },
-    [theme.breakpoints.up('laptop')]: {
+    [theme.breakpoints.up('xl')]: {
       width:'1050px',
       height:'523px',
       padding:'0px 15px 30px 15px',

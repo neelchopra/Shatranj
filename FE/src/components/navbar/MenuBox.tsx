@@ -25,7 +25,7 @@ import { logout } from '../../app-state/features/userPreferenceSlice';
             fontWeight:700,
             fontSize:'24px',
             color: 'white',
-            [theme.breakpoints.up('laptop')]: {
+            [theme.breakpoints.up('xl')]: {
             fontSize:'28px',
             },
         });
@@ -33,7 +33,7 @@ import { logout } from '../../app-state/features/userPreferenceSlice';
           display:'flex',
           alignItems:'center',
           padding:'0 0 0 15px',
-          [theme.breakpoints.up('laptop')]: {
+          [theme.breakpoints.up('xl')]: {
             padding: '0 0 0 20px',
           },
         });
@@ -42,7 +42,7 @@ import { logout } from '../../app-state/features/userPreferenceSlice';
           width:'50px',
           marginRight:'10px',
           bottom:'0px',
-          [theme.breakpoints.up('laptop')]: {
+          [theme.breakpoints.up('xl')]: {
             height:'67px',
             width:'67px',
             marginRight:'16px',
