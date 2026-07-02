@@ -50,10 +50,18 @@ async function finishGame(io, roomCode, result, pgn) {
 	room.finished = true;
 
 	const { white, black } = room.players;
-	const whiteDelta = eloDelta(white.rating, black.rating, result);
-	const blackDelta = eloDelta(black.rating, white.rating, 1 - result);
 
 	try {
+		// Fetch fresh ratings — the ones cached at connect go stale after a game.
+		const [whiteUser, blackUser] = await Promise.all([
+			User.findById(white.id).select("rating"),
+			User.findById(black.id).select("rating"),
+		]);
+		const whiteRating = whiteUser ? whiteUser.rating : white.rating;
+		const blackRating = blackUser ? blackUser.rating : black.rating;
+		const whiteDelta = eloDelta(whiteRating, blackRating, result);
+		const blackDelta = eloDelta(blackRating, whiteRating, 1 - result);
+
 		await GameHistory.create({
 			player_id: white.id,
 			opponent_id: black.id,
@@ -70,8 +78,8 @@ async function finishGame(io, roomCode, result, pgn) {
 			{ $inc: { rating: blackDelta, number_of_matches: 1 } }
 		);
 		io.to(roomCode).emit("ratings_updated", {
-			white: { username: white.username, rating: white.rating + whiteDelta, delta: whiteDelta },
-			black: { username: black.username, rating: black.rating + blackDelta, delta: blackDelta },
+			white: { username: white.username, rating: whiteRating + whiteDelta, delta: whiteDelta },
+			black: { username: black.username, rating: blackRating + blackDelta, delta: blackDelta },
 		});
 	} catch (err) {
 		console.error(`Failed to persist game ${roomCode}:`, err);
