@@ -17,6 +17,8 @@ import MenuIcon from "@mui/icons-material/Menu";
 import SportsEsportsOutlinedIcon from "@mui/icons-material/SportsEsportsOutlined";
 import LeaderboardOutlinedIcon from "@mui/icons-material/LeaderboardOutlined";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
+import VolumeUpIcon from "@mui/icons-material/VolumeUp";
+import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Loginmodal from "../utilities/Loginmodal";
@@ -24,6 +26,7 @@ import MenuBox from "../components/navbar/MenuBox";
 import AnimatedNumber from "../ui/AnimatedNumber";
 import SocketNotifications from "../realtime/SocketNotifications";
 import { socket } from "../socket";
+import { isSoundMuted, setSoundMuted } from "../utilities/sounds";
 import { useAppDispatch, useAppSelector } from "../app-state/hooks";
 import { logout } from "../app-state/features/userPreferenceSlice";
 import { tokens } from "../theme";
@@ -46,6 +49,13 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
 	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
 	const user = useAppSelector((state) => state.userPreference.user);
+	const [muted, setMuted] = useState(isSoundMuted());
+
+	const toggleMuted = () => {
+		const next = !muted;
+		setSoundMuted(next);
+		setMuted(next);
+	};
 
 	// Connect as soon as someone is logged in — not just when they visit
 	// "Play Online" — so friend-request/challenge notifications and presence
@@ -171,6 +181,9 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
 						</Typography>
 					</NavLink>
 					<Box sx={{ flexGrow: 1 }} />
+					<IconButton onClick={toggleMuted} aria-label={muted ? "unmute sounds" : "mute sounds"} sx={{ marginRight: "4px" }}>
+						{muted ? <VolumeOffIcon /> : <VolumeUpIcon />}
+					</IconButton>
 					{user ? (
 						<Box sx={{ display: "flex", alignItems: "center", gap: "12px" }}>
 							<Chip

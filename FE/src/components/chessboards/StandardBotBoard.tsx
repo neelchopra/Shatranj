@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Square, Piece } from 'react-chessboard/dist/chessboard/types';
+import { motion, useAnimationControls } from 'framer-motion';
 import { useAppDispatch, useAppSelector } from '../../app-state/hooks';
 import { setGameState } from '../../app-state/features/gameSlice';
 import { Chess } from 'chess.js';
 import Engine from '../../Engine';
 import { evaluateGame } from '../../utilities/chessResult';
+import { playIllegalSound, soundForMove } from '../../utilities/sounds';
 import { tokens } from '../../theme';
 
 type Props = {
@@ -23,6 +25,12 @@ const StandardBotBoard = (props: Props)=>{
     if (!chessRef.current) chessRef.current = new Chess();
     const engineRef = useRef<Engine | null>(null);
     const sourceSquareRef = useRef<string>('');
+    const shakeControls = useAnimationControls();
+
+    const shakeBoard = () => {
+        playIllegalSound();
+        shakeControls.start({ x: [0, -8, 8, -8, 0], transition: { duration: 0.3 } });
+    };
 
     const publishPosition = () => {
         const chess = chessRef.current!;
@@ -44,11 +52,12 @@ const StandardBotBoard = (props: Props)=>{
             const chess = chessRef.current!;
             if (chess.isGameOver() || chess.turn() !== 'b') return;
             try {
-                chess.move({
+                const engineMove = chess.move({
                     from: bestMove.substring(0, 2),
                     to: bestMove.substring(2, 4),
                     promotion: bestMove.substring(4, 5) || 'q',
                 });
+                soundForMove(chess.inCheck(), engineMove);
                 publishPosition();
             } catch (e) {
                 console.error('Engine suggested an invalid move:', bestMove);
@@ -72,6 +81,7 @@ const StandardBotBoard = (props: Props)=>{
     const playerMove = (moveInput: {from:string,to:string,promotion?:string}) => {
         const chess = chessRef.current!;
         const move = chess.move(moveInput); // throws on illegal moves
+        soundForMove(chess.inCheck(), move);
         publishPosition();
         requestEngineMove();
         return move;
@@ -81,11 +91,15 @@ const StandardBotBoard = (props: Props)=>{
 
     const handleDrop = (source:Square,target:Square,piece:Piece)=>{
         setOptionSquares({})
-        if (!myTurn() || chessRef.current!.isGameOver()) return false;
+        if (!myTurn() || chessRef.current!.isGameOver()) {
+            shakeBoard();
+            return false;
+        }
         try{
             playerMove({from:source,to:target,promotion:piece[1]?.toLowerCase() ?? 'q'});
             return true;
         }catch(e){
+            shakeBoard();
             return false;
         }
     }
@@ -112,17 +126,19 @@ const StandardBotBoard = (props: Props)=>{
     }
 
     return(
-        <Chessboard
-            position={position}
-            onPieceDrop={handleDrop}
-            boardWidth={props.boardWidth}
-            onSquareClick={handleClick}
-            customDarkSquareStyle={{backgroundColor:tokens.board.dark}}
-            customLightSquareStyle={{backgroundColor:tokens.board.light}}
-            customSquareStyles={{...optionSquares}}
-            animationDuration={100}
-            arePremovesAllowed={false}
-        />
+        <motion.div animate={shakeControls}>
+            <Chessboard
+                position={position}
+                onPieceDrop={handleDrop}
+                boardWidth={props.boardWidth}
+                onSquareClick={handleClick}
+                customDarkSquareStyle={{backgroundColor:tokens.board.dark}}
+                customLightSquareStyle={{backgroundColor:tokens.board.light}}
+                customSquareStyles={{...optionSquares}}
+                animationDuration={100}
+                arePremovesAllowed={false}
+            />
+        </motion.div>
     )
 }
 

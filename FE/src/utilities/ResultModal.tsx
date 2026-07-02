@@ -8,6 +8,7 @@ import { TransitionProps } from '@mui/material/transitions';
 import { closeModal } from '../app-state/features/gameSlice';
 import AnimatedNumber from '../ui/AnimatedNumber';
 import { socket } from '../socket';
+import { playGameEndSound } from './sounds';
 
 const GrowTransition = React.forwardRef(function GrowTransition(
     props: TransitionProps & { children: React.ReactElement },
@@ -56,6 +57,12 @@ const ResultModal = ({ ratingUpdate, myColor, room }: Props) => {
 
     const isDraw = result === 'draw' || result === 'abort';
     const won = !isDraw && myColor && result === myColor;
+
+    useEffect(() => {
+        if (!open || !result) return;
+        playGameEndSound(isDraw ? 'draw' : won ? 'win' : 'loss');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open]);
 
     const icon = isDraw
         ? <HandshakeOutlinedIcon sx={{ fontSize: 40 }} />

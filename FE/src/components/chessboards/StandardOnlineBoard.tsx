@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Chessboard } from "react-chessboard";
 import { Square, Piece } from "react-chessboard/dist/chessboard/types";
+import { motion, useAnimationControls } from "framer-motion";
 import { useAppDispatch, useAppSelector } from "../../app-state/hooks";
 import { setGameState } from "../../app-state/features/gameSlice";
 import { Chess } from "chess.js";
 import { socket } from "../../socket";
 import { evaluateGame } from "../../utilities/chessResult";
+import { playIllegalSound, soundForMove } from "../../utilities/sounds";
 import { tokens } from "../../theme";
 
 type Props = {
@@ -22,6 +24,12 @@ const StandardOnlineBoard = (props: Props) => {
 	const chessRef = useRef<Chess | null>(null);
 	if (!chessRef.current) chessRef.current = new Chess();
 	const sourceSquareRef = useRef<string>("");
+	const shakeControls = useAnimationControls();
+
+	const shakeBoard = () => {
+		playIllegalSound();
+		shakeControls.start({ x: [0, -8, 8, -8, 0], transition: { duration: 0.3 } });
+	};
 
 	const myTurn = () => chessRef.current!.turn() === props.color[0];
 
@@ -42,6 +50,7 @@ const StandardOnlineBoard = (props: Props) => {
 		const onReceiveMove = (move: any) => {
 			try {
 				chessRef.current!.move(move);
+				soundForMove(chessRef.current!.inCheck(), move);
 				publishPosition();
 			} catch (error) {
 				console.error("Received an invalid move:", move);
@@ -57,6 +66,7 @@ const StandardOnlineBoard = (props: Props) => {
 	const playMove = (moveInput: { from: string; to: string; promotion?: string }) => {
 		const chess = chessRef.current!;
 		const move = chess.move(moveInput); // throws on illegal moves
+		soundForMove(chess.inCheck(), move);
 		publishPosition();
 		socket.emit("send_move", { move, room: props.room });
 		return move;
@@ -64,7 +74,10 @@ const StandardOnlineBoard = (props: Props) => {
 
 	const handleDrop = (source: Square, target: Square, piece: Piece) => {
 		setOptionSquares({});
-		if (!myTurn() || chessRef.current!.isGameOver()) return false;
+		if (!myTurn() || chessRef.current!.isGameOver()) {
+			shakeBoard();
+			return false;
+		}
 		try {
 			playMove({
 				from: source,
@@ -73,6 +86,7 @@ const StandardOnlineBoard = (props: Props) => {
 			});
 			return true;
 		} catch (e) {
+			shakeBoard();
 			return false;
 		}
 	};
@@ -110,18 +124,20 @@ const StandardOnlineBoard = (props: Props) => {
 	};
 
 	return (
-		<Chessboard
-			position={position}
-			onPieceDrop={handleDrop}
-			boardWidth={props.boardWidth}
-			onSquareClick={handleClick}
-			customDarkSquareStyle={{ backgroundColor: tokens.board.dark }}
-			customLightSquareStyle={{ backgroundColor: tokens.board.light }}
-			customSquareStyles={{ ...optionSquares }}
-			animationDuration={100}
-			arePremovesAllowed={false}
-			boardOrientation={props.color as "white" | "black"}
-		/>
+		<motion.div animate={shakeControls}>
+			<Chessboard
+				position={position}
+				onPieceDrop={handleDrop}
+				boardWidth={props.boardWidth}
+				onSquareClick={handleClick}
+				customDarkSquareStyle={{ backgroundColor: tokens.board.dark }}
+				customLightSquareStyle={{ backgroundColor: tokens.board.light }}
+				customSquareStyles={{ ...optionSquares }}
+				animationDuration={100}
+				arePremovesAllowed={false}
+				boardOrientation={props.color as "white" | "black"}
+			/>
+		</motion.div>
 	);
 };
 export default StandardOnlineBoard;
