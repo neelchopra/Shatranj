@@ -17,6 +17,14 @@ const isUserOnline = (io, userId) => {
 	return !!room && room.size > 0;
 };
 
+/** One live Socket instance for a user, if any (arbitrary pick among their tabs). */
+const getSocketForUser = (io, userId) => {
+	const room = io.sockets.adapter.rooms.get(userRoom(userId));
+	if (!room || room.size === 0) return null;
+	const socketId = room.values().next().value;
+	return io.sockets.sockets.get(socketId) || null;
+};
+
 /**
  * In-memory state. Resets on server restart — acceptable for this scope
  * (live games are lost on redeploy; finished games are already in Mongo).
@@ -232,6 +240,29 @@ function attachSocket(io) {
 		// result is from white's perspective: 1 / 0 / 0.5.
 		socket.on("game_over", ({ room, result, pgn }) => {
 			finishGame(io, room, result, pgn);
+		});
+
+		socket.on("request_rematch", ({ room }) => {
+			const state = rooms.get(room);
+			if (!state || !state.finished || !state.players) {
+				return socket.emit("room_error", { message: "That game session has expired" });
+			}
+			if (!state.rematchRequested) state.rematchRequested = new Set();
+			state.rematchRequested.add(socket.data.user.id);
+
+			const { white, black } = state.players;
+			const otherId = socket.data.user.id === white.id ? black.id : white.id;
+
+			if (state.rematchRequested.has(white.id) && state.rematchRequested.has(black.id)) {
+				const whiteSocket = getSocketForUser(io, white.id);
+				const blackSocket = getSocketForUser(io, black.id);
+				if (whiteSocket && blackSocket) {
+					startGame(io, makeRoomCode(), whiteSocket, blackSocket, state.time);
+				}
+			} else {
+				socket.emit("rematch_waiting");
+				notifyUser(io, otherId, "rematch_offered", {});
+			}
 		});
 
 		socket.on("resign", ({ room, pgn }) => {

@@ -160,7 +160,7 @@ const StandardGame = () => {
 			</Box>
 			<GameControls room={state.room} isOnline={true} />
 
-			<ResultModal ratingUpdate={ratingUpdate} myColor={state.color} />
+			<ResultModal ratingUpdate={ratingUpdate} myColor={state.color} room={state.room} />
 
 			<Dialog open={drawOffered}>
 				<DialogTitle>{state.opponent.username} offers a draw</DialogTitle>

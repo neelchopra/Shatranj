@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../app-state/hooks'
 import { Box, Typography, Button, Dialog, Grow } from '@mui/material';
 import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined';
@@ -7,6 +7,7 @@ import SentimentDissatisfiedOutlinedIcon from '@mui/icons-material/SentimentDiss
 import { TransitionProps } from '@mui/material/transitions';
 import { closeModal } from '../app-state/features/gameSlice';
 import AnimatedNumber from '../ui/AnimatedNumber';
+import { socket } from '../socket';
 
 const GrowTransition = React.forwardRef(function GrowTransition(
     props: TransitionProps & { children: React.ReactElement },
@@ -17,13 +18,41 @@ const GrowTransition = React.forwardRef(function GrowTransition(
 
 export type RatingUpdate = { rating: number; delta: number } | null;
 
-const ResultModal = ({ ratingUpdate, myColor }: { ratingUpdate?: RatingUpdate; myColor?: string }) => {
+type Props = {
+    ratingUpdate?: RatingUpdate;
+    myColor?: string;
+    room?: string;
+}
+
+const ResultModal = ({ ratingUpdate, myColor, room }: Props) => {
     const dispatch  = useAppDispatch();
     const open = useAppSelector((state)=> state.game.gameState.isGameOver)
     const result = useAppSelector((state)=> state.game.gameState.result)
+    const [rematchState, setRematchState] = useState<'idle' | 'waiting' | 'offered'>('idle');
+
     const handleClose = () => {
         dispatch(closeModal())
     }
+
+    const canRematch = !!room && result !== 'abort';
+
+    useEffect(() => {
+        if (!canRematch) return;
+        const onOffered = () => setRematchState('offered');
+        const onWaiting = () => setRematchState('waiting');
+        socket.on('rematch_offered', onOffered);
+        socket.on('rematch_waiting', onWaiting);
+        return () => {
+            socket.off('rematch_offered', onOffered);
+            socket.off('rematch_waiting', onWaiting);
+        };
+    }, [canRematch]);
+
+    const requestRematch = () => {
+        if (!room) return;
+        socket.emit('request_rematch', { room });
+        if (rematchState !== 'offered') setRematchState('waiting');
+    };
 
     const isDraw = result === 'draw' || result === 'abort';
     const won = !isDraw && myColor && result === myColor;
@@ -76,9 +105,20 @@ const ResultModal = ({ ratingUpdate, myColor }: { ratingUpdate?: RatingUpdate; m
                         </Box>
                     </Typography>
                 )}
-                <Button onClick={handleClose} variant='contained' sx={{ marginTop: ratingUpdate ? 0 : '16px' }}>
-                    Close
-                </Button>
+                <Box sx={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: ratingUpdate ? 0 : '16px' }}>
+                    {canRematch && (
+                        <Button
+                            onClick={requestRematch}
+                            variant={rematchState === 'offered' ? 'contained' : 'outlined'}
+                            disabled={rematchState === 'waiting'}
+                        >
+                            {rematchState === 'waiting' ? 'Waiting for opponent…' : rematchState === 'offered' ? 'Accept rematch' : 'Rematch'}
+                        </Button>
+                    )}
+                    <Button onClick={handleClose} variant='contained'>
+                        Close
+                    </Button>
+                </Box>
             </Box>
         </Dialog>
     )

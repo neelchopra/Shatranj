@@ -189,35 +189,6 @@ async function main() {
 	const carolIncoming2 = await axios.get(`${BASE}/users/friend-requests`, auth(carolToken));
 	await axios.post(`${BASE}/users/friend-requests/${carolIncoming2.data.incoming[0].requestId}/accept`, {}, auth(carolToken));
 
-	// ---------- Challenge a friend ----------
-	console.log("\n== Challenge a friend ==");
-	const notAFriendErr = waitFor(alice, "room_error");
-	alice.emit("challenge_friend", { friendUserId: carolId, time: 5 });
-	check("challenging a non-friend is rejected", /only challenge friends/i.test((await notAFriendErr).message));
-
-	const offlineFriendErr = waitFor(bob, "room_error");
-	bob.emit("challenge_friend", { friendUserId: carolId, time: 5 });
-	check("challenging an offline friend is rejected", /offline/i.test((await offlineFriendErr).message));
-
-	const challengeReceived = waitFor(bob, "challenge_received");
-	alice.emit("challenge_friend", { friendUserId: bobId, time: 10 });
-	const challenge = await challengeReceived;
-	check("challenged friend receives the invite", challenge.from.username === "alice" && challenge.time === 10, challenge);
-
-	const aChallengeStart = waitFor(alice, "game_start");
-	const bChallengeStart = waitFor(bob, "game_start");
-	bob.emit("join_room", { room: challenge.room });
-	const [acs, bcs] = await Promise.all([aChallengeStart, bChallengeStart]);
-	check("accepting a challenge starts the game for both", acs.room === bcs.room && acs.time === 10, { acs, bcs });
-
-	const declineChallenge = waitFor(bob, "challenge_received");
-	alice.emit("challenge_friend", { friendUserId: bobId, time: 5 });
-	const challenge2 = await declineChallenge;
-	const challengerNotified = waitFor(alice, "challenge_declined");
-	bob.emit("challenge_declined", { room: challenge2.room });
-	await challengerNotified;
-	check("declining a challenge notifies the challenger", true);
-
 	// ---------- Matchmaking ----------
 	console.log("\n== Matchmaking ==");
 	const aliceStart = waitFor(alice, "game_start");
@@ -308,6 +279,62 @@ async function main() {
 	const total = byName(lb3.data, "alice").rating + byName(lb3.data, "bob").rating;
 	check("ratings conserved after second game", total === 800, lb3.data.map((u) => [u.username, u.rating]));
 
+	// ---------- Challenge a friend ----------
+	console.log("\n== Challenge a friend ==");
+	const notAFriendErr = waitFor(alice, "room_error");
+	alice.emit("challenge_friend", { friendUserId: carolId, time: 5 });
+	check("challenging a non-friend is rejected", /only challenge friends/i.test((await notAFriendErr).message));
+
+	const offlineFriendErr = waitFor(bob, "room_error");
+	bob.emit("challenge_friend", { friendUserId: carolId, time: 5 });
+	check("challenging an offline friend is rejected", /offline/i.test((await offlineFriendErr).message));
+
+	const challengeReceived = waitFor(bob, "challenge_received");
+	alice.emit("challenge_friend", { friendUserId: bobId, time: 10 });
+	const challenge = await challengeReceived;
+	check("challenged friend receives the invite", challenge.from.username === "alice" && challenge.time === 10, challenge);
+
+	const aChallengeStart = waitFor(alice, "game_start");
+	const bChallengeStart = waitFor(bob, "game_start");
+	bob.emit("join_room", { room: challenge.room });
+	const [acs, bcs] = await Promise.all([aChallengeStart, bChallengeStart]);
+	check("accepting a challenge starts the game for both", acs.room === bcs.room && acs.time === 10, { acs, bcs });
+
+	const declineChallenge = waitFor(bob, "challenge_received");
+	alice.emit("challenge_friend", { friendUserId: bobId, time: 5 });
+	const challenge2 = await declineChallenge;
+	const challengerNotified = waitFor(alice, "challenge_declined");
+	bob.emit("challenge_declined", { room: challenge2.room });
+	await challengerNotified;
+	check("declining a challenge notifies the challenger", true);
+
+	// ---------- Rematch ----------
+	console.log("\n== Rematch ==");
+	// Finish the game the accepted challenge started, then offer a rematch on it.
+	const challengeWhite = acs.color === "white" ? alice : bob;
+	const cgRatings = Promise.all([waitFor(alice, "ratings_updated"), waitFor(bob, "ratings_updated")]);
+	challengeWhite.emit("game_over", { room: acs.room, result: 1, pgn: "1. e4" });
+	await cgRatings;
+
+	const waitingAck = waitFor(alice, "rematch_waiting");
+	alice.emit("request_rematch", { room: acs.room });
+	await waitingAck;
+	check("first rematch request puts requester in a waiting state", true);
+
+	const offeredAck = waitFor(bob, "rematch_offered");
+	await offeredAck;
+	check("the other player is notified a rematch was offered", true);
+
+	const aRematchStart = waitFor(alice, "game_start");
+	const bRematchStart = waitFor(bob, "game_start");
+	bob.emit("request_rematch", { room: acs.room });
+	const [aRematch, bRematch] = await Promise.all([aRematchStart, bRematchStart]);
+	check(
+		"both requesting starts a fresh game with a new room code",
+		aRematch.room === bRematch.room && aRematch.room !== acs.room,
+		{ old: acs.room, fresh: aRematch.room }
+	);
+
 	// ---------- Draw flow ----------
 	console.log("\n== Draw flow ==");
 	const aStart3 = waitFor(alice, "game_start");
@@ -351,7 +378,7 @@ async function main() {
 	await sleep(500);
 
 	const histAfter = await axios.get(`${BASE}/games/history`, auth(aliceToken));
-	check("four games persisted total", histAfter.data.length === 4, histAfter.data.length);
+	check("five games persisted total", histAfter.data.length === 5, histAfter.data.length);
 
 	// ---------- Abort on instant disconnect ----------
 	// Fresh sockets: the disconnect test above closed one of the originals.
@@ -370,7 +397,7 @@ async function main() {
 	check("early disconnect aborts without rating change", abort.reason === "abort" && abort.result === null, abort);
 	await sleep(500);
 	const histFinal = await axios.get(`${BASE}/games/history`, auth(bobToken));
-	check("aborted game not persisted", histFinal.data.length === 4, histFinal.data.length);
+	check("aborted game not persisted", histFinal.data.length === 5, histFinal.data.length);
 
 	alice.close();
 	bob.close();
