@@ -10,6 +10,7 @@ import PlayOnline from './pages/PlayOnline';
 import PlayComputer from './pages/PlayComputer';
 import StandardGame from './Games/StandardGame';
 import StandardBotGame from './Games/StandardBotGame';
+import Analysis from './pages/Analysis';
 import RequireAuth from './utilities/RequireAuth';
 import NotFound from './pages/NotFound';
 import AppShell from './layout/AppShell';
@@ -37,6 +38,7 @@ function App() {
               <Route path="/play/online/game" element={<RequireAuth><StandardGame/></RequireAuth>}/>
               <Route path="/play/computer/game" element={<StandardBotGame/>}/>
             </Route>
+            <Route path="/analysis" element={<Analysis/>}/>
             <Route path="/leaderboard" element={<LeaderboardPage/>}/>
             <Route path="/friends" element={<RequireAuth><FriendsPage/></RequireAuth>}/>
             <Route path="/my-account" element={<RequireAuth><MyAccount/></RequireAuth>}/>

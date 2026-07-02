@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../app-state/hooks'
 import { Box, Typography, Button, Dialog, Grow } from '@mui/material';
 import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined';
@@ -27,9 +28,16 @@ type Props = {
 
 const ResultModal = ({ ratingUpdate, myColor, room }: Props) => {
     const dispatch  = useAppDispatch();
+    const navigate = useNavigate();
     const open = useAppSelector((state)=> state.game.gameState.isGameOver)
     const result = useAppSelector((state)=> state.game.gameState.result)
+    const pgn = useAppSelector((state)=> state.game.gameState.pgn)
     const [rematchState, setRematchState] = useState<'idle' | 'waiting' | 'offered'>('idle');
+
+    const analyzeGame = () => {
+        dispatch(closeModal());
+        navigate('/analysis', { state: { pgn } });
+    };
 
     const handleClose = () => {
         dispatch(closeModal())
@@ -112,7 +120,12 @@ const ResultModal = ({ ratingUpdate, myColor, room }: Props) => {
                         </Box>
                     </Typography>
                 )}
-                <Box sx={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: ratingUpdate ? 0 : '16px' }}>
+                <Box sx={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: ratingUpdate ? 0 : '16px' }}>
+                    {pgn && (
+                        <Button onClick={analyzeGame} variant='outlined'>
+                            Analyze
+                        </Button>
+                    )}
                     {canRematch && (
                         <Button
                             onClick={requestRematch}
