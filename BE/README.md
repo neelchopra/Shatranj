@@ -1,4 +1,4 @@
-# BetterChess
+# Shatranj
 
 ### Description
 - A chess website which combines the best features from multiple chess websites with a fresh user interface.

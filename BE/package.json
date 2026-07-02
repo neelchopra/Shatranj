@@ -1,5 +1,5 @@
 {
-  "name": "betterchess",
+  "name": "shatranj-server",
   "version": "1.0.0",
   "description": "- A chess website which combines the best features from multiple chess websites with a fresh user interface.\r - Play versus a friend or a random person.\r - Practice against an AI and challenge it when ready!\r - Play different fun variants.",
   "main": "index.js",

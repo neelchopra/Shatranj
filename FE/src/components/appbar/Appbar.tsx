@@ -55,7 +55,7 @@ const Appbar = () => {
 		<div>
 			<Topbar position="fixed">
 				<NavLink to="/">
-					<TopbarText>BetterChess</TopbarText>
+					<TopbarText>Shatranj</TopbarText>
 				</NavLink>
 				<Login
 					variant="contained"
