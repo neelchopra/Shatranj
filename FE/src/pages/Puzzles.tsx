@@ -3,11 +3,12 @@ import { Box, Button, Chip, Typography } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import GlassCard from "../ui/GlassCard";
 import AnimatedNumber from "../ui/AnimatedNumber";
 import useBoardWidth from "../hooks/useBoardWidth";
-import PuzzleBoard, { PuzzleData } from "../components/chessboards/PuzzleBoard";
+import PuzzleBoard, { PuzzleData, PuzzleOutcome } from "../components/chessboards/PuzzleBoard";
 import { fadeUp, staggerContainer } from "../ui/motion";
 import { tokens } from "../theme";
 import { useAppDispatch } from "../app-state/hooks";
@@ -20,10 +21,21 @@ type AttemptResult = {
 	delta: number;
 };
 
+/** Pairs SAN plies into "1. e4 e5" style movetext for display. */
+const formatSanLine = (sans: string[]) => {
+	const parts: string[] = [];
+	for (let i = 0; i < sans.length; i += 2) {
+		const moveNumber = Math.floor(i / 2) + 1;
+		parts.push(`${moveNumber}. ${sans[i]}${sans[i + 1] ? " " + sans[i + 1] : ""}`);
+	}
+	return parts.join("  ");
+};
+
 const Puzzles = () => {
 	const dispatch = useAppDispatch();
+	const navigate = useNavigate();
 	const [puzzle, setPuzzle] = useState<PuzzleData | null>(null);
-	const [outcome, setOutcome] = useState<"solved" | "failed" | null>(null);
+	const [outcome, setOutcome] = useState<PuzzleOutcome | null>(null);
 	const [attempt, setAttempt] = useState<AttemptResult | null>(null);
 	const [error, setError] = useState("");
 	const boardContainerRef = useRef<HTMLDivElement>(null);
@@ -41,16 +53,21 @@ const Puzzles = () => {
 
 	useEffect(() => { loadPuzzle(); }, [loadPuzzle]);
 
-	const handleResult = (solved: boolean) => {
+	const handleResult = (result: PuzzleOutcome) => {
 		if (!puzzle) return;
-		setOutcome(solved ? "solved" : "failed");
+		setOutcome(result);
 		api
-			.post(`/puzzles/${puzzle._id}/attempt`, { solved })
+			.post(`/puzzles/${puzzle._id}/attempt`, { solved: result.solved })
 			.then((res) => {
 				setAttempt(res.data);
 				dispatch(updatePuzzleStats(res.data));
 			})
 			.catch(() => setError("Could not record that attempt."));
+	};
+
+	const reviewOnAnalysisBoard = () => {
+		if (!outcome) return;
+		navigate("/analysis", { state: { pgn: outcome.solutionPgn } });
 	};
 
 	return (
@@ -84,7 +101,7 @@ const Puzzles = () => {
 					)}
 				</Box>
 
-				<GlassCard sx={{ padding: "28px", minWidth: 260, maxWidth: 320 }}>
+				<GlassCard sx={{ padding: "28px", minWidth: 260, maxWidth: 360 }}>
 					{puzzle && (
 						<Chip
 							label={`Puzzle rating ${puzzle.rating}`}
@@ -100,12 +117,12 @@ const Puzzles = () => {
 									alignItems: "center",
 									gap: "10px",
 									marginBottom: "16px",
-									color: outcome === "solved" ? "success.main" : "error.main",
+									color: outcome.solved ? "success.main" : "error.main",
 								}}
 							>
-								{outcome === "solved" ? <CheckCircleOutlineIcon /> : <HighlightOffIcon />}
+								{outcome.solved ? <CheckCircleOutlineIcon /> : <HighlightOffIcon />}
 								<Typography sx={{ fontWeight: 700 }}>
-									{outcome === "solved" ? "Solved!" : "Not quite"}
+									{outcome.solved ? "Solved!" : "Not quite"}
 								</Typography>
 							</Box>
 						</motion.div>
@@ -126,6 +143,39 @@ const Puzzles = () => {
 								Streak: {attempt.puzzle_streak} (best {attempt.best_streak})
 							</Typography>
 						</Box>
+					)}
+
+					{outcome?.mistake && (
+						<Box sx={{ marginBottom: "16px", padding: "12px 14px", borderRadius: "10px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.25)" }}>
+							<Typography sx={{ fontSize: "0.9rem" }}>
+								You played{" "}
+								<Box component="span" sx={{ fontWeight: 700, color: "error.main" }}>
+									{outcome.mistake.playedSan || "an illegal move"}
+								</Box>{" "}
+								— the winning move was{" "}
+								<Box component="span" sx={{ fontWeight: 700, color: "success.main" }}>
+									{outcome.mistake.expectedSan}
+								</Box>
+								.
+							</Typography>
+						</Box>
+					)}
+
+					{outcome && (
+						<Box sx={{ marginBottom: "20px" }}>
+							<Typography sx={{ color: "text.secondary", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
+								Full solution
+							</Typography>
+							<Typography sx={{ fontFamily: "monospace", fontSize: "0.9rem", color: "text.secondary", lineHeight: 1.7 }}>
+								{formatSanLine(outcome.solutionSan)}
+							</Typography>
+						</Box>
+					)}
+
+					{outcome && (
+						<Button variant="outlined" fullWidth onClick={reviewOnAnalysisBoard} sx={{ marginBottom: "12px" }}>
+							Play it out on the analysis board
+						</Button>
 					)}
 
 					<Button variant="contained" fullWidth onClick={loadPuzzle} disabled={!outcome}>
