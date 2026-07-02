@@ -45,6 +45,7 @@ const MyAccount = () => {
               Desc={profile.email}
               Rating={profile.rating}
               Games={profile.number_of_matches}
+              PuzzleRating={profile.puzzle_rating}
             />
           </motion.div>
         )}

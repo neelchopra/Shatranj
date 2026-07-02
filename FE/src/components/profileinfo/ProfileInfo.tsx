@@ -9,6 +9,7 @@ interface ProfileInfoProps {
     Desc: string,
     Rating: number,
     Games: number,
+    PuzzleRating: number,
 }
 
 const StatTile = ({ label, value }: { label: string; value: number }) => (
@@ -63,6 +64,7 @@ const ProfileInfo = (props: ProfileInfoProps) => {
         <Box sx={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <StatTile label="Rating" value={props.Rating} />
             <StatTile label="Games" value={props.Games} />
+            <StatTile label="Puzzles" value={props.PuzzleRating} />
         </Box>
     </GlassCard>
   );

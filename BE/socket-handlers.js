@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const User = require("./models/user.model");
 const Friends = require("./models/friends.model");
 const GameHistory = require("./models/game-history.model");
+const { eloDelta } = require("./utils/elo");
 
 const userRoom = (userId) => `user:${userId}`;
 
@@ -33,8 +34,6 @@ const queues = new Map(); // time control -> [socket]
 const rooms = new Map(); // room code -> { players: {white, black}, time, sans: [], finished, started }
 const socketRoom = new Map(); // socket.id -> room code
 
-const K_FACTOR = 32;
-
 const makeRoomCode = () => crypto.randomBytes(3).toString("hex").toUpperCase();
 
 const playerInfo = (socket) => ({
@@ -56,11 +55,6 @@ const buildPgn = (sans) =>
 	sans
 		.map((san, i) => (i % 2 === 0 ? `${i / 2 + 1}. ${san}` : san))
 		.join(" ");
-
-const eloDelta = (rating, opponentRating, score) => {
-	const expected = 1 / (1 + 10 ** ((opponentRating - rating) / 400));
-	return Math.round(K_FACTOR * (score - expected));
-};
 
 /**
  * Persist the game and update both ratings. Idempotent per room.

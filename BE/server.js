@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const { Server } = require("socket.io");
 const gameRouter = require("./routes/games.routes");
 const userRouter = require("./routes/users.routes");
+const puzzleRouter = require("./routes/puzzles.routes");
 const attachSocket = require("./socket-handlers");
 
 require("dotenv").config();
@@ -36,6 +37,7 @@ mongoose
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 app.use("/users", userRouter);
 app.use("/games", gameRouter);
+app.use("/puzzles", puzzleRouter);
 
 const server = http.createServer(app);
 const io = new Server(server, {

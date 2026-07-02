@@ -17,6 +17,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import SportsEsportsOutlinedIcon from "@mui/icons-material/SportsEsportsOutlined";
 import LeaderboardOutlinedIcon from "@mui/icons-material/LeaderboardOutlined";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
+import ExtensionOutlinedIcon from "@mui/icons-material/ExtensionOutlined";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -36,6 +37,7 @@ const SIDEBAR_WIDTH = 240;
 
 const navitems = [
 	{ label: "Play", route: "/play", icon: <SportsEsportsOutlinedIcon /> },
+	{ label: "Puzzles", route: "/puzzles", icon: <ExtensionOutlinedIcon /> },
 	{ label: "Leaderboard", route: "/leaderboard", icon: <LeaderboardOutlinedIcon /> },
 	{ label: "Friends", route: "/friends", icon: <GroupOutlinedIcon /> },
 ];

@@ -11,8 +11,10 @@ const path = require("path");
 
 const BE_DIR = path.join(__dirname, "..");
 const { MongoMemoryServer } = require("mongodb-memory-server");
+const mongoose = require("mongoose");
 const axios = require("axios");
 const { io } = require("socket.io-client");
+const Puzzle = require("../models/puzzle.model");
 
 const PORT = 8123;
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -74,6 +76,22 @@ async function main() {
 	}
 	check("server boots and /health responds", up);
 	if (!up) return cleanup(server, mongod);
+
+	// Seed a small, deterministic puzzle set (separate mongoose connection —
+	// the server process has its own) spanning the rating bands the real
+	// Lichess-derived dataset would.
+	const testFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	await mongoose.connect(uri);
+	await Puzzle.insertMany(
+		Array.from({ length: 10 }, (_, i) => ({
+			puzzleId: `test-${i}`,
+			fen: testFen,
+			moves: ["e2e4", "e7e5"],
+			rating: 600 + i * 200 + 50,
+			themes: ["test"],
+		}))
+	);
+	await mongoose.disconnect();
 
 	// ---------- REST: auth ----------
 	console.log("\n== REST auth ==");
@@ -398,6 +416,53 @@ async function main() {
 	await sleep(500);
 	const histFinal = await axios.get(`${BASE}/games/history`, auth(bobToken));
 	check("aborted game not persisted", histFinal.data.length === 5, histFinal.data.length);
+
+	// ---------- Puzzles ----------
+	console.log("\n== Puzzles ==");
+	const noAuthPuzzle = await axios.get(`${BASE}/puzzles/next`, { validateStatus: () => true });
+	check("puzzles require auth -> 401", noAuthPuzzle.status === 401);
+
+	const initialStats = await axios.get(`${BASE}/puzzles/stats`, auth(carolToken));
+	check("fresh user starts at puzzle_rating 1200", initialStats.data.puzzle_rating === 1200, initialStats.data);
+
+	const puzzle1 = await axios.get(`${BASE}/puzzles/next`, auth(carolToken));
+	check(
+		"GET /puzzles/next returns a puzzle near the user's rating",
+		puzzle1.status === 200 && puzzle1.data.fen && Array.isArray(puzzle1.data.moves) && Math.abs(puzzle1.data.rating - 1200) <= 700,
+		puzzle1.data
+	);
+
+	const badAttempt = await axios.post(
+		`${BASE}/puzzles/${puzzle1.data._id}/attempt`,
+		{ solved: "yes" },
+		{ ...auth(carolToken), validateStatus: () => true }
+	);
+	check("non-boolean solved -> 400", badAttempt.status === 400);
+
+	const missingAttempt = await axios.post(
+		`${BASE}/puzzles/000000000000000000000000/attempt`,
+		{ solved: true },
+		{ ...auth(carolToken), validateStatus: () => true }
+	);
+	check("attempting an unknown puzzle -> 404", missingAttempt.status === 404);
+
+	const solveAttempt = await axios.post(`${BASE}/puzzles/${puzzle1.data._id}/attempt`, { solved: true }, auth(carolToken));
+	check(
+		"solving updates rating and streak",
+		solveAttempt.data.puzzle_streak === 1 && typeof solveAttempt.data.delta === "number",
+		solveAttempt.data
+	);
+
+	const puzzle2 = await axios.get(`${BASE}/puzzles/next`, auth(carolToken));
+	const failAttempt = await axios.post(`${BASE}/puzzles/${puzzle2.data._id}/attempt`, { solved: false }, auth(carolToken));
+	check("failing resets the streak to 0", failAttempt.data.puzzle_streak === 0, failAttempt.data);
+
+	const finalStats = await axios.get(`${BASE}/puzzles/stats`, auth(carolToken));
+	check(
+		"stats reflect the best streak reached and match the last attempt's rating",
+		finalStats.data.best_streak >= 1 && finalStats.data.puzzle_rating === failAttempt.data.puzzle_rating,
+		finalStats.data
+	);
 
 	alice.close();
 	bob.close();

@@ -8,6 +8,9 @@ export type User = {
 	email: string;
 	rating: number;
 	number_of_matches: number;
+	puzzle_rating: number;
+	puzzle_streak: number;
+	best_streak: number;
 };
 
 type AuthResponse = {
@@ -80,6 +83,14 @@ const userPreferenceSlice = createSlice({
 				localStorage.setItem("user", JSON.stringify(state.user));
 			}
 		},
+		updatePuzzleStats(state, action: { payload: { puzzle_rating: number; puzzle_streak: number; best_streak: number } }) {
+			if (state.user) {
+				state.user.puzzle_rating = action.payload.puzzle_rating;
+				state.user.puzzle_streak = action.payload.puzzle_streak;
+				state.user.best_streak = action.payload.best_streak;
+				localStorage.setItem("user", JSON.stringify(state.user));
+			}
+		},
 	},
 	extraReducers(builder) {
 		builder
@@ -114,6 +125,6 @@ const userPreferenceSlice = createSlice({
 	},
 });
 
-export const { logout, updateRating } = userPreferenceSlice.actions;
+export const { logout, updateRating, updatePuzzleStats } = userPreferenceSlice.actions;
 
 export default userPreferenceSlice.reducer;

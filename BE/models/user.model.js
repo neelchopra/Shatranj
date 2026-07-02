@@ -36,6 +36,21 @@ const UserSchema = new Schema(
 			required: false,
 			default: 0,
 		},
+		puzzle_rating: {
+			type: Number,
+			required: false,
+			default: 1200,
+		},
+		puzzle_streak: {
+			type: Number,
+			required: false,
+			default: 0,
+		},
+		best_streak: {
+			type: Number,
+			required: false,
+			default: 0,
+		},
 	},
 	{
 		timestamps: true,
