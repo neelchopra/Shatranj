@@ -48,38 +48,47 @@ const Analysis = () => {
 	const boardWidth = useBoardWidth(boardContainerRef);
 
 	const position = index === 0 ? (plies[0]?.before ?? START_FEN) : plies[index - 1].after;
-	const sideToMove = position.split(" ")[1]; // 'w' | 'b'
+
+	// The engine's onMessage callback is registered exactly once (Engine.onMessage
+	// stacks listeners on every call, so it must not be re-registered per move).
+	// That means it closes over whatever `position` was at mount time forever —
+	// so it needs to read the *current* position through a ref, not the closure,
+	// or the white/black sign-flip below ends up using stale side-to-move data
+	// and the eval appears to randomly invert on alternating moves.
+	const positionRef = useRef(position);
+	positionRef.current = position;
 
 	useEffect(() => {
 		const engine = new Engine();
 		engineRef.current = engine;
 		engine.onMessage(({ positionEvaluation, possibleMate, bestMove }) => {
+			const currentPosition = positionRef.current;
+			const currentSideToMove = currentPosition.split(" ")[1]; // 'w' | 'b'
 			if (positionEvaluation !== undefined) {
 				const cp = Number(positionEvaluation);
-				setEvalCp(sideToMove === "w" ? cp : -cp);
+				setEvalCp(currentSideToMove === "w" ? cp : -cp);
 				setMateIn(null);
 			}
 			if (possibleMate !== undefined) {
 				const mate = Number(possibleMate);
-				setMateIn(sideToMove === "w" ? mate : -mate);
+				setMateIn(currentSideToMove === "w" ? mate : -mate);
 			}
 			if (bestMove) {
-				setBestMoveSan(uciToSan(position, bestMove));
+				setBestMoveSan(uciToSan(currentPosition, bestMove));
 			}
 		});
 		return () => {
 			engine.terminate();
 			engineRef.current = null;
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	useEffect(() => {
 		setEvalCp(null);
 		setMateIn(null);
 		setBestMoveSan("");
+		engineRef.current?.stop();
 		engineRef.current?.evaluatePosition(position, ANALYSIS_DEPTH);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [position]);
 
 	if (!pgn || plies.length === 0) return <Navigate to="/play" replace />;
