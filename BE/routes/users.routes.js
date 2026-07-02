@@ -1,146 +1,155 @@
 const router = require("express").Router();
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
 const Friends = require("../models/friends.model");
+const auth = require("../middleware/auth");
+
+const signToken = (userId) =>
+	jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+const publicUser = (user) => {
+	const { password, __v, ...rest } = user.toObject();
+	return rest;
+};
 
 /**
- * TO REGISTER A NEW USER
- * --------------------------------
- * Accepts the following details (as a JSON object):
- * userDetails: {
- * 	username: String,
- * 	password: String,
- * 	email: String
- * }
+ * POST /users/register
+ * Body: { username, email, password }
+ * Returns: { token, user }
  */
-router.route("/register").post((req, res) => {
-	const userDetails = req.body.userDetails;
-	const newUser = new User(userDetails);
-
-	newUser
-		.save()
-		.then(() => res.status(201).json("User Added..."))
-		.catch((err) => res.status(400).json("User Already Exists..."));
-});
-
-/**
- * TO LOGIN USER
- * --------------------------------
- * Accepts the following details (as a JSON object):
- * userCredentials: {
- * 	username: String,
- * 	password: String
- * }
- */
-router.route("/login").post((req, res) => {
-	const userCredentials = req.body.userCredentials;
-	User.find()
-		.then((users) => {
-			users.map((user) => {
-				if (
-					user.username === userCredentials.username &&
-					user.password === userCredentials.password
-				) {
-					res.status(200).json(user);
-				}
-			});
-			if (!res.statusCode === 200) {
-				res.status(400).json("User Not Found");
-			}
-		})
-		.catch((err) => res.status(400).json("User Not Found"));
-});
-
-/**
- * TO LIST FRIENDS OF USER
- * --------------------------------
- * Accepts the following details (as a JSON object):
- * userID: {
- *  player_id: ID of the user
- * }
- */
-router.route("/list-friends").post((req, res) => {
-	const player_id = req.body.userID.player_id;
-	Friends.find().then((friends) => {
-		let allFriends = [];
-		friends.map((friend) => {
-			if (
-				(friend.player_id.equals(player_id) || friend.friend_id.equals(player_id)) &&
-				!allFriends.includes(friend)
-			) {
-				allFriends.push(friend);
-			}
-		});
-		User.find().then((users) => {
-			let friendDetails = [];
-			allFriends.forEach((friend) => {
-				users.map((user) => {
-					if (
-						!user._id.equals(player_id) &&
-						(user._id.equals(friend.friend_id) || user._id.equals(friend.player_id)) &&
-						!friendDetails.includes(user)
-					) {
-						friendDetails.push(user);
-					}
-				});
-			});
-			if (friendDetails.length > 0) {
-				res.status(200).json(friendDetails);
-			} else {
-				res.status(404).json("No friends found...");
-			}
-		});
-	});
-});
-
-/**
- * ADD A NEW FRIEND
- * --------------------------------
- * * Accepts the following details (as a JSON object):
- * userID: {
- *  player_id: ID of the user,
- *  friend_id: ID of the friend
- * }
- */
-router.route("/add-friend").post((req, res) => {
-	const userID = req.body.userID;
-	if (userID.player_id === userID.friend_id) {
-		res.status(400).json("Player and Friend cannot have same ID...");
-	} else {
-		const newFriend = new Friends(userID);
-
-		newFriend
-			.save()
-			.then(() => res.status(201).json("Friend Added..."))
-			.catch((err) => res.status(400).json("Could not add friend..."));
+router.post("/register", async (req, res) => {
+	try {
+		const { username, email, password } = req.body;
+		if (!username || !email || !password) {
+			return res.status(400).json({ message: "Username, email and password are required" });
+		}
+		if (password.length < 6) {
+			return res.status(400).json({ message: "Password must be at least 6 characters" });
+		}
+		const hashed = await bcrypt.hash(password, 10);
+		const user = await new User({ username, email, password: hashed }).save();
+		res.status(201).json({ token: signToken(user._id), user: publicUser(user) });
+	} catch (err) {
+		if (err.code === 11000) {
+			const field = Object.keys(err.keyPattern || {})[0] || "account";
+			return res.status(409).json({ message: `That ${field} is already taken` });
+		}
+		console.error("Register failed:", err);
+		res.status(500).json({ message: "Registration failed, please try again" });
 	}
 });
 
 /**
- * SEARCH FOR USERNAME
- * --------------------------------
- * userID: {
- * 	username: username entered by user
- * }
+ * POST /users/login
+ * Body: { username, password }
+ * Returns: { token, user }
  */
-router.route("/search-users").post((req, res) => {
-	const enteredUsername = req.body.userID.username;
-	const matchingUsers = [];
-	User.find().then((users) => {
-		users.map((user) => {
-			const username = user.username.toLowerCase();
-			console.log(username, enteredUsername.toLowerCase());
-			if (username.includes(enteredUsername.toLowerCase())) {
-				console.log("inside");
-				matchingUsers.push(user);
-			}
-		});
-		console.log(matchingUsers);
-		if (matchingUsers.length > 0) {
-			res.status(200).json(matchingUsers);
-		} else {
-			res.status(404).json("User not found...");
+router.post("/login", async (req, res) => {
+	try {
+		const { username, password } = req.body;
+		if (!username || !password) {
+			return res.status(400).json({ message: "Username and password are required" });
 		}
-	});
+		const user = await User.findOne({ username });
+		if (!user || !(await bcrypt.compare(password, user.password))) {
+			return res.status(401).json({ message: "Invalid username or password" });
+		}
+		res.status(200).json({ token: signToken(user._id), user: publicUser(user) });
+	} catch (err) {
+		console.error("Login failed:", err);
+		res.status(500).json({ message: "Login failed, please try again" });
+	}
+});
+
+/**
+ * GET /users/me — current user profile
+ */
+router.get("/me", auth, async (req, res) => {
+	try {
+		const user = await User.findById(req.userId).select("-password -__v");
+		if (!user) return res.status(404).json({ message: "User not found" });
+		res.json(user);
+	} catch (err) {
+		res.status(500).json({ message: "Could not load profile" });
+	}
+});
+
+/**
+ * GET /users/leaderboard — top players by rating (public)
+ */
+router.get("/leaderboard", async (req, res) => {
+	try {
+		const users = await User.find()
+			.sort({ rating: -1 })
+			.limit(20)
+			.select("username rating number_of_matches");
+		res.json(users);
+	} catch (err) {
+		res.status(500).json({ message: "Could not load leaderboard" });
+	}
+});
+
+/**
+ * GET /users/search-users?q=<name>
+ */
+router.get("/search-users", auth, async (req, res) => {
+	try {
+		const q = (req.query.q || "").trim();
+		if (!q) return res.json([]);
+		const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		const users = await User.find({ username: { $regex: escaped, $options: "i" } })
+			.limit(20)
+			.select("username rating number_of_matches");
+		res.json(users);
+	} catch (err) {
+		res.status(500).json({ message: "Search failed" });
+	}
+});
+
+/**
+ * GET /users/friends — friends of the logged-in user
+ */
+router.get("/friends", auth, async (req, res) => {
+	try {
+		const links = await Friends.find({
+			$or: [{ player_id: req.userId }, { friend_id: req.userId }],
+		});
+		const friendIds = links.map((link) =>
+			link.player_id.equals(req.userId) ? link.friend_id : link.player_id
+		);
+		const friends = await User.find({ _id: { $in: friendIds } }).select(
+			"username rating number_of_matches"
+		);
+		res.json(friends);
+	} catch (err) {
+		res.status(500).json({ message: "Could not load friends" });
+	}
+});
+
+/**
+ * POST /users/add-friend
+ * Body: { friend_id }
+ */
+router.post("/add-friend", auth, async (req, res) => {
+	try {
+		const { friend_id } = req.body;
+		if (!friend_id) return res.status(400).json({ message: "friend_id is required" });
+		if (friend_id === req.userId) {
+			return res.status(400).json({ message: "You cannot add yourself as a friend" });
+		}
+		const exists = await Friends.findOne({
+			$or: [
+				{ player_id: req.userId, friend_id },
+				{ player_id: friend_id, friend_id: req.userId },
+			],
+		});
+		if (exists) return res.status(409).json({ message: "Already friends" });
+		await new Friends({ player_id: req.userId, friend_id }).save();
+		res.status(201).json({ message: "Friend added" });
+	} catch (err) {
+		res.status(500).json({ message: "Could not add friend" });
+	}
 });
 
 module.exports = router;

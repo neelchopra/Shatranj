@@ -31,6 +31,8 @@ const GameHistorySchema = new Schema({
 		type: String,
 		required: true,
 	},
+}, {
+	timestamps: true,
 });
 
 const GameHistory = mongoose.model("GameHistory", GameHistorySchema);

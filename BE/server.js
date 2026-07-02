@@ -1,52 +1,51 @@
 const express = require("express");
+const http = require("http");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const { Server } = require("socket.io");
 const gameRouter = require("./routes/games.routes");
 const userRouter = require("./routes/users.routes");
+const attachSocket = require("./socket-handlers");
 
 require("dotenv").config();
 
+if (!process.env.MONGODB_URI) {
+	console.error("MONGODB_URI is not set. Copy .env.example to .env and fill it in.");
+	process.exit(1);
+}
+if (!process.env.JWT_SECRET) {
+	console.error("JWT_SECRET is not set. Copy .env.example to .env and fill it in.");
+	process.exit(1);
+}
+
 const app = express();
-const port = process.env.SERVER_PORT || 8000;
+const port = process.env.PORT || 8000;
+const allowedOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:3000").split(",");
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: allowedOrigins }));
 
-const uri = process.env.MONGODB_URI;
-mongoose.connect(uri, { useNewUrlParser: true });
-const connection = mongoose.connection;
+mongoose
+	.connect(process.env.MONGODB_URI)
+	.then(() => console.log("MongoDB connection established successfully"))
+	.catch((err) => {
+		console.error("MongoDB connection failed:", err.message);
+		process.exit(1);
+	});
 
-connection.once("open", (err) => {
-	if (err) throw err;
-	console.log("MongoDB connection established successfully");
-});
-
+app.get("/health", (req, res) => res.json({ status: "ok" }));
 app.use("/users", userRouter);
 app.use("/games", gameRouter);
 
-app.listen(port, (err) => {
-	if (err) throw err;
+const server = http.createServer(app);
+const io = new Server(server, {
+	cors: {
+		origin: allowedOrigins,
+		methods: ["GET", "POST"],
+	},
+});
+attachSocket(io);
+
+server.listen(port, () => {
 	console.log(`Listening on port ${port}`);
 });
-
-/**
- * USER ROUTES
- * --------------------------------
- * POST - http://localhost:5000/users/register --- Accepts user details in the body
- * POST - http://localhost:5000/users/login --- Accepts user credentials in the body
- * POST - http://localhost:5000/users/search-users --- Acccepts username entered by user in the body
- */
-
-/**
- * GAME ROUTES
- * --------------------------------
- * POST - http://localhost:5000/games/game-history --- Accepts user id in the body
- * POST - http://localhost:5000/games/add-game --- Accepts game details in the body
- */
-
-/**
- * FRIEND ROUTES
- * --------------------------------
- * POST - http://localhost:5000/users/list-friends --- Accepts the user id in the body
- * POST - http://localhost:5000/users/add-friend --- Accepts the user id of the player and friend
- */
