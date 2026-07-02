@@ -1,355 +1,284 @@
-import React from 'react';
-import { Box,Typography,Button,InputBase,InputAdornment,IconButton } from '@mui/material'
-import styled from '@emotion/styled';
-import theme from '../theme';
+import React, { forwardRef, useState } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  TextField,
+  InputAdornment,
+  IconButton,
+} from '@mui/material';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import Lock from '@mui/icons-material/Lock';
-import LoginIcon from '@mui/icons-material/Login';
-import MailIcon from '@mui/icons-material/MailOutline';
-import { useState } from 'react';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import MailOutlineIcon from '@mui/icons-material/MailOutline';
+import { motion } from 'framer-motion';
 import { useAppDispatch, useAppSelector } from '../app-state/hooks';
+import { loginUser, registerUser } from '../app-state/features/userPreferenceSlice';
+import { tokens } from '../theme';
 
-import { loginUser,registerUser } from '../app-state/features/userPreferenceSlice';
+const isValidEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
 
-const ModalBox = styled(Box)({
-    position: 'absolute',
-    top:'50%',
-    left: '50%',
-    transform: 'translate(-40%, -40%)',
-    width: 600,       
-    borderRadius:'15px',
-    backgroundColor:'#1A1A1B',
-    color: '#FFFFFF',
-    display: 'flex',
-    flexDirection:'column',
-    padding:'10px',
-    opacity:1
+const Loginmodal = forwardRef<HTMLDivElement, { onClose?: () => void }>(
+  ({ onClose }, ref) => {
+    const [tab, setTab] = useState<'login' | 'register'>('login');
+    const [showPassword, setShowPassword] = useState(false);
+    const [formError, setFormError] = useState('');
 
-    
-})  
-const Header =styled(Button)({
-  display:'flex',
-  flexDirection:'row', 
-   
-})
-const HeaderButtton =styled(Button)({
-    color: '#FFFFFF',    
-    width: '100%', 
-    height: '70px',
-    margin:'0 5px 0 5px',
-    "&:hover":{     
-      backgroundColor:`${theme.palette.primary.light}`
-    },
-    textTransform: "none", 
-    fontSize:'25px'  
-    
-   
-})
+    const [nameLogin, setNameLogin] = useState('');
+    const [passwordLogin, setPasswordLogin] = useState('');
+    const [nameRegister, setNameRegister] = useState('');
+    const [passwordRegister, setPasswordRegister] = useState('');
+    const [emailRegister, setEmailRegister] = useState('');
 
-const FieldBox=styled(Box)({
-  margin:'0 30px 0 30px',
+    const dispatch = useAppDispatch();
+    const isloading = useAppSelector((state) => state.userPreference.isloading);
+    const serverError = useAppSelector((state) => state.userPreference.error);
 
+    const handleRegister = () => {
+      if (!nameRegister || !passwordRegister || !emailRegister) {
+        setFormError('All fields are required');
+        return;
+      }
+      if (!isValidEmail(emailRegister)) {
+        setFormError('Please enter a valid email');
+        return;
+      }
+      setFormError('');
+      dispatch(registerUser({ username: nameRegister, password: passwordRegister, email: emailRegister }))
+        .unwrap()
+        .then(() => onClose?.())
+        .catch(() => {});
+    };
 
-})
-const Label= styled(Typography)({
-  fontSize:'22px',
-  margin:'20px 0 0 0'
-})
-const Error= styled(Typography)({
-  fontSize:'16px',
-  margin:'10px 0 0 0'
-})
-const InputBox=styled(Box)({
-    display:'flex',
-    flexDirection:'row',
-    height:'60px',
-    margin:'10px 0 0 0'
+    const handleLogin = () => {
+      if (!nameLogin || !passwordLogin) {
+        setFormError('Username and password are required');
+        return;
+      }
+      setFormError('');
+      dispatch(loginUser({ username: nameLogin, password: passwordLogin }))
+        .unwrap()
+        .then(() => onClose?.())
+        .catch(() => {});
+    };
 
+    const displayError = formError || serverError;
+    const isLogin = tab === 'login';
 
-})
+    const passwordAdornment = (
+      <InputAdornment position="end">
+        <IconButton
+          aria-label="toggle password visibility"
+          onClick={() => setShowPassword((show) => !show)}
+          onMouseDown={(e) => e.preventDefault()}
+          edge="end"
+          size="small"
+        >
+          {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+        </IconButton>
+      </InputAdornment>
+    );
 
-const IconBox=styled(Box)({
-    width:'15%',
-    backgroundColor:'#171719',
-    borderRadius:'5px 0 0 5px',
-    display:'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-
-  
-})
-const TextBox=styled(Box)({
-    width:'80%',
-    backgroundColor:'#222226',
-    borderRadius:'0 5px 5px 0',
-    padding:'0 0 0 20px'
-})
-const Login=styled(Box)({
-    display:'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin:'30px 0 10px 0'
-    
-})
-const LoginButton=styled(Button)({
-    color:'#FFFFFF',
-    backgroundColor:'#171719',
-    border:'1px solid #FFFFFF',
-    height:'50px',
-    width:'180px',
-    fontSize:'20px',
-    textTransform: "none",  
-    borderRadius:'10px'  
-})
-
-
-
-const Loginmodal = ({ onClose }: { onClose?: () => void }) => {
-  const [showPassword, setShowPassword] = useState(false);
-
-
-  const [login,setlogin]= useState(true)
-  const [register,setregister]= useState(false)
-  
-  const openLogin = () => {
-    setlogin(true);
-    setregister(false);
-  }
-  
-  const openRegister = () => {
-    setregister(true); 
-    setlogin(false);
-  };
-
-  const handleClickShowPassword = () => setShowPassword((show) => !show);
-
-  const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-  };
-  const isValidEmail=(emailRegister:any)=>{    
-    return /\S+@\S+\.\S+/.test(emailRegister);
-  }
-  const [mailError, setmailError] = useState(false);
-  const [formError, setformError] = useState("");
-  //Login
-  const[nameLogin,setnameLogin]=useState("")
-  const[passwordLogin,setpasswordLogin]=useState("")
-  const[nameRegister,setnameRegister]=useState("")
-  const[passwordRegister,setpasswordRegister]=useState("")
-  const[emailRegister,setemailRegister]=useState("")
-
-  const dispatch = useAppDispatch();
-  const isloading = useAppSelector((state) => state.userPreference.isloading);
-  const serverError = useAppSelector((state) => state.userPreference.error);
-
-  const handleregister = (n:string,p:string,m:string) => {
-    if (!n || !p || !m) {
-      setformError("All fields are required");
-      return;
-    }
-    if (!isValidEmail(m)) {
-      setformError("Please enter a valid email");
-      return;
-    }
-    setformError("");
-    dispatch(registerUser({ username: n, password: p, email: m }))
-      .unwrap()
-      .then(() => onClose?.())
-      .catch(() => {});
-  };
-  const handleLogin = (n:string,p:string) => {
-    if (!n || !p) {
-      setformError("Username and password are required");
-      return;
-    }
-    setformError("");
-    dispatch(loginUser({ username: n, password: p }))
-      .unwrap()
-      .then(() => onClose?.())
-      .catch(() => {});
-  };
-
-  const displayError = formError || serverError;
-
-  return (
-    
-    <ModalBox>
-      <Header sx={{}}>
-        <HeaderButtton onClick={openLogin} sx={{backgroundColor:login?'#222226':'#1A1A1B'}}>Login</HeaderButtton>
-        
-        <HeaderButtton onClick={openRegister} sx={{backgroundColor:register?'#222226':'#1A1A1B'}} >Register</HeaderButtton>
-      </Header>
-      <Box display={`${login? '' : 'none'}`}>
-
-          <FieldBox>
-            <Label>User Name</Label>
-            <InputBox>
-              <IconBox>
-                <PersonOutlineOutlinedIcon sx={{fontSize:'35px'}}/>
-                </IconBox> 
-              <TextBox>
-              <InputBase
-                sx={{ ml: 1, flex: 1,width:'auto',height:'100%',fontSize:'20px',color:'#FFFFFF'}}
-                placeholder="Enter your name..."
-                onChange={(e)=>setnameLogin(e.target.value)}       
-                value={nameLogin}     
-              />
-              </TextBox>
-            </InputBox>
-          </FieldBox>
-          <FieldBox>
-            <Label>Password</Label>
-            <InputBox>
-              <IconBox>
-              <Lock sx={{fontSize:'32px'}}/>
-              </IconBox>
-              <TextBox>
-              
-              <InputBase
-                sx={{ ml: 1, flex: 1,width:'90%',height:'100%',fontSize:'20px',color:'#FFFFFF'}}
-                placeholder="Password..."  
-                id="filled-adornment-password"
-                type={showPassword ? 'text' : 'password'}
-                onChange={(e)=>setpasswordLogin(e.target.value)} 
-                value={passwordLogin}
-                endAdornment={
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="toggle password visibility"
-                      onClick={handleClickShowPassword}
-                      onMouseDown={handleMouseDownPassword}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff sx={{ color:'white',fontSize:'20px'}}/> : <Visibility sx={{color:'white',fontSize:'20px'}} />}
-                    </IconButton>
-                  </InputAdornment>
-                }
-              />
-              
-              </TextBox>
-            </InputBox>
-          </FieldBox>
-        
-            
-          <FieldBox>
-            <Box display={`${displayError ? '' : 'none'}`}>
-              <Error sx={{color:'#f44336'}}>{displayError}</Error>
-            </Box>
-          </FieldBox>
-          <Login>
-            <LoginButton disabled={isloading} onClick={()=>{handleLogin(nameLogin,passwordLogin)}}>
-                {isloading ? 'Logging in...' : 'Login'}
-              <LoginIcon/>
-            </LoginButton>
-
-          </Login>
-      </Box>
-      <Box display={`${register? '' : 'none'}`}>
-      
-          <FieldBox>
-            <Label>User Name</Label>
-            <InputBox>
-              <IconBox>
-                <PersonOutlineOutlinedIcon sx={{fontSize:'35px'}}/>
-                </IconBox> 
-              <TextBox>
-              <InputBase
-                sx={{ ml: 1, flex: 1,width:'auto',height:'100%',fontSize:'20px',color:'#FFFFFF'}}
-                value={nameRegister}
-                placeholder="Enter your name..."         
-                onChange={(e)=>setnameRegister(e.target.value)}    
-              />
-              </TextBox>
-            </InputBox>
-          </FieldBox>
-          <FieldBox>
-            <Label>Password</Label>
-            <InputBox>
-              <IconBox>
-              <Lock sx={{fontSize:'32px'}}/>
-              </IconBox>
-              <TextBox>
-              
-              <InputBase
-                sx={{ ml: 1, flex: 1,width:'90%',height:'100%',fontSize:'20px',color:'#FFFFFF'}}
-                value={passwordRegister}
-                placeholder="Password..."  
-                id="filled-adornment-password"
-                type={showPassword ? 'text' : 'password'}
-                onChange={(e)=>setpasswordRegister(e.target.value)} 
-                endAdornment={
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="toggle password visibility"
-                      onClick={handleClickShowPassword}
-                      onMouseDown={handleMouseDownPassword}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff sx={{ color:'white',fontSize:'20px'}}/> : <Visibility sx={{color:'white',fontSize:'20px'}} />}
-                    </IconButton>
-                  </InputAdornment>
-                }
-              />
-              
-              </TextBox>
-            </InputBox>
-          </FieldBox>
-          <FieldBox>
-            <Label>Email ID</Label>
-            <Box display={`${mailError? '' : 'none'}`}>
-            <Error>*Invalid</Error>
-            </Box>
-            
-            <InputBox>
-              <IconBox>
-                <MailIcon sx={{fontSize:'35px'}}/>
-                </IconBox> 
-              <TextBox>
-              
-              <InputBase
-                sx={{width:'auto',height:'100%',fontSize:'20px',color:'#FFFFFF'}}
-                value={emailRegister}
-                placeholder="Enter your email id..."            
-                onChange={(e)=>{
-                  if(!isValidEmail(e.target.value)){
-                    setmailError(true)
-                    setemailRegister(e.target.value)
-                  }                  
-                  else{
-                    setmailError(false)
-                    setemailRegister(e.target.value)
-                    
-                  }
+    return (
+      <Box
+        ref={ref}
+        tabIndex={-1}
+        sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 'min(440px, calc(100vw - 32px))',
+          borderRadius: `${tokens.radius.lg}px`,
+          background: tokens.glassStrong.background,
+          backdropFilter: tokens.glassStrong.blur,
+          WebkitBackdropFilter: tokens.glassStrong.blur,
+          border: tokens.glassStrong.border,
+          boxShadow: tokens.glowSoft,
+          padding: '28px',
+          outline: 'none',
+        }}
+      >
+        {/* Tab switcher */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: '4px',
+            padding: '4px',
+            borderRadius: '12px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            marginBottom: '24px',
+          }}
+        >
+          {(['login', 'register'] as const).map((key) => (
+            <Box
+              key={key}
+              onClick={() => setTab(key)}
+              sx={{
+                position: 'relative',
+                flex: 1,
+                textAlign: 'center',
+                padding: '10px',
+                borderRadius: '9px',
+                cursor: 'pointer',
+                userSelect: 'none',
+              }}
+            >
+              {tab === key && (
+                <motion.div
+                  layoutId="auth-tab"
+                  transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: 9,
+                    background: 'rgba(16,185,129,0.16)',
+                    border: '1px solid rgba(16,185,129,0.4)',
+                  }}
+                />
+              )}
+              <Typography
+                sx={{
+                  position: 'relative',
+                  fontWeight: 600,
+                  color: tab === key ? 'primary.light' : 'text.secondary',
+                  textTransform: 'capitalize',
                 }}
-              
-                  
-              />
-              </TextBox>
-            </InputBox>
-          </FieldBox>
-        
-            
-          <FieldBox>
-            <Box display={`${displayError ? '' : 'none'}`}>
-              <Error sx={{color:'#f44336'}}>{displayError}</Error>
+              >
+                {key}
+              </Typography>
             </Box>
-          </FieldBox>
-          <Login>
-            <LoginButton disabled={isloading} onClick={()=>{handleregister(nameRegister,passwordRegister,emailRegister)}}>
-                {isloading ? 'Registering...' : 'Register'}
-              <LoginIcon/>
-            </LoginButton>
+          ))}
+        </Box>
 
-          </Login>
+        {/* Panels — both stay mounted so field state survives tab switches */}
+        <Box sx={{ position: 'relative' }}>
+          <motion.div
+            animate={{
+              opacity: isLogin ? 1 : 0,
+              x: isLogin ? 0 : -16,
+              pointerEvents: isLogin ? 'auto' : 'none',
+            }}
+            transition={{ duration: 0.2 }}
+            style={{ display: isLogin ? 'block' : 'none' }}
+          >
+            <TextField
+              fullWidth
+              variant="filled"
+              label="Username"
+              value={nameLogin}
+              onChange={(e) => setNameLogin(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonOutlineOutlinedIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ marginBottom: '16px' }}
+            />
+            <TextField
+              fullWidth
+              variant="filled"
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              value={passwordLogin}
+              onChange={(e) => setPasswordLogin(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockOutlinedIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+                endAdornment: passwordAdornment,
+              }}
+            />
+          </motion.div>
 
+          <motion.div
+            animate={{
+              opacity: isLogin ? 0 : 1,
+              x: isLogin ? 16 : 0,
+              pointerEvents: isLogin ? 'none' : 'auto',
+            }}
+            transition={{ duration: 0.2 }}
+            style={{ display: isLogin ? 'none' : 'block' }}
+          >
+            <TextField
+              fullWidth
+              variant="filled"
+              label="Username"
+              value={nameRegister}
+              onChange={(e) => setNameRegister(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonOutlineOutlinedIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ marginBottom: '16px' }}
+            />
+            <TextField
+              fullWidth
+              variant="filled"
+              label="Email"
+              type="email"
+              value={emailRegister}
+              onChange={(e) => setEmailRegister(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <MailOutlineIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ marginBottom: '16px' }}
+            />
+            <TextField
+              fullWidth
+              variant="filled"
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              value={passwordRegister}
+              onChange={(e) => setPasswordRegister(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleRegister(); }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockOutlinedIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+                endAdornment: passwordAdornment,
+              }}
+            />
+          </motion.div>
+        </Box>
+
+        {displayError && (
+          <Typography sx={{ color: 'error.main', marginTop: '16px', fontSize: '0.9rem' }}>
+            {displayError}
+          </Typography>
+        )}
+
+        <Button
+          fullWidth
+          variant="contained"
+          size="large"
+          disabled={isloading}
+          onClick={isLogin ? handleLogin : handleRegister}
+          sx={{ marginTop: '24px', padding: '12px' }}
+        >
+          {isloading
+            ? isLogin ? 'Logging in…' : 'Registering…'
+            : isLogin ? 'Login' : 'Create account'}
+        </Button>
       </Box>
-    </ModalBox>
-    
-    
-    
-  )
-}
-  
-export default Loginmodal
+    );
+  }
+);
+
+export default Loginmodal;

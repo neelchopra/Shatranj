@@ -1,138 +1,71 @@
 import * as React from 'react';
-import { Box, Avatar } from '@mui/material';
-import styled from '@emotion/styled';
-import Typography from '@mui/material/Typography'
-import theme from '../../theme';
+import { Box, Avatar, Typography } from '@mui/material';
+import GlassCard from '../../ui/GlassCard';
+import AnimatedNumber from '../../ui/AnimatedNumber';
+import { tokens } from '../../theme';
 
-interface profileinfotypes {
+interface ProfileInfoProps {
     Username: string,
     Desc: string,
     Rating: number,
     Games: number,
 }
 
-const ProfileInfoBox = styled(Box)({
-    height:'220px',
-    width:'700px',
-    display:'flex',
-    backgroundColor:' #171719',
-    marginTop:'30px',    
-    borderRadius:'20px',
-    [theme.breakpoints.up('xl')]: {
-        height:'277px',
-        width:'817px',
-        marginTop:'44px',  
-    },
-})
+const StatTile = ({ label, value }: { label: string; value: number }) => (
+    <Box
+        sx={{
+            padding: '16px 24px',
+            borderRadius: '14px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            minWidth: 120,
+            textAlign: 'center',
+        }}
+    >
+        <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            {label}
+        </Typography>
+        <Typography sx={{ fontFamily: tokens.fontDisplay, fontSize: '2rem', fontWeight: 700, color: 'primary.light' }}>
+            <AnimatedNumber value={value} />
+        </Typography>
+    </Box>
+);
 
-const ProfileInfoImage=styled(Box)({
-    height:'180px',
-    width:'180px',
-    margin:'20px',
-    borderRadius:'10px',
-    backgroundColor:' #222226', 
-    [theme.breakpoints.up('xl')]: {
-        height:'190px',
-        width:'217px',         
-        margin:'30px',
-
-    },
-})
-
-
-const ProfileInfoHeader=styled(Typography)({
-    fontSize:'45px',
-    fontWeight:700,
-    color:'white',
-    padding:'20px 0 0 5px',
-    [theme.breakpoints.up('xl')]: {
-        fontSize:'45px',
-        fontWeight:700,
-        padding:'30px 0 0 30px',
-    },
-
-})
-
-const ProfileInfoDesc=styled(Typography)({
-    fontSize:'18px',
-    fontWeight:700,
-    color:'#69696E',
-    padding:'45px 0 0 10px',
-    [theme.breakpoints.up('xl')]: {
-        fontSize:'20px',
-        fontWeight:700,
-        padding:'68px 0 0 18px',
-    },
-    
-})
-
-const RatingdisplayBox=styled(Box)({
-    padding:'10px',
-    backgroundColor:'#222226',
-    margin:'15px  20px 0 0',
-    borderRadius:'20px',
-    height:'100px',
-    width:'140px',
-    color:'white',
-    [theme.breakpoints.up('xl')]: {
-        margin:'17px 0 30px 0',
-        height:'130px',
-        width:'159px',
-        
-    },
-
-})
-
-
-interface props {
-    format:string,
-    rating:string | number
-
-}
-const Ratingdisplay=({format,rating}:props)=>{
-    return(
-    
-        <RatingdisplayBox>   
-            <Typography sx={{fontSize:'20px',display:'flex',justifyContent:'center'}}>
-                {format}
-            </Typography>
-            <Typography sx={{fontSize:'40px',display:'flex',justifyContent:'center'}}>
-                {rating}
-            </Typography>  
-        </RatingdisplayBox>      
-   
-    )
-}
-
-
-const ProfileInfo = (props:profileinfotypes) => {
+const ProfileInfo = (props: ProfileInfoProps) => {
   return (
-    <ProfileInfoBox>
-        < Box  sx={{display:'flex'}}>
+    <GlassCard
+        sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: { xs: '20px', sm: '32px' },
+            padding: { xs: '24px', sm: '32px' },
+            flexWrap: 'wrap',
+        }}
+    >
+        <Avatar
+            sx={{
+                height: { xs: 80, sm: 110 },
+                width: { xs: 80, sm: 110 },
+                fontSize: { xs: '2rem', sm: '2.8rem' },
+                fontWeight: 700,
+                background: 'rgba(16,185,129,0.16)',
+                color: 'primary.light',
+                border: '2px solid rgba(16,185,129,0.4)',
+                boxShadow: '0 0 24px rgba(16,185,129,0.2)',
+            }}
+        >
+            {props.Username[0]?.toUpperCase()}
+        </Avatar>
+        <Box sx={{ flexGrow: 1, minWidth: 180 }}>
+            <Typography variant="h2">{props.Username}</Typography>
+            <Typography sx={{ color: 'text.secondary' }}>{props.Desc}</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+            <StatTile label="Rating" value={props.Rating} />
+            <StatTile label="Games" value={props.Games} />
+        </Box>
+    </GlassCard>
+  );
+};
 
-                <ProfileInfoImage sx={{display:'flex',alignItems:'center',justifyContent:'center'}}>
-                    <Avatar sx={{height:'120px',width:'120px',fontSize:'60px'}}>
-                        {props.Username[0]?.toUpperCase()}
-                    </Avatar>
-                </ProfileInfoImage>
-                <Box>
-                    <Box sx={{display:'flex',position:'relative'}}>
-                        <ProfileInfoHeader>{props.Username}</ProfileInfoHeader>
-                        <ProfileInfoDesc>{props.Desc}</ProfileInfoDesc>
-                    </Box>
-                    <Box sx={{display:'flex',gap:'20px'}}>
-                            <Ratingdisplay format='Rating' rating={props.Rating}></Ratingdisplay>
-                            <Ratingdisplay format='Games' rating={props.Games}></Ratingdisplay>
-                    </Box>
-
-                </Box>
-
-              </Box>
-
-
-    </ProfileInfoBox>
-
-  )
-}
-
-export default ProfileInfo
+export default ProfileInfo;

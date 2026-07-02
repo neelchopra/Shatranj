@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react'
-import Box from '@mui/material/Box' ;
+import React, { useEffect, useState } from 'react';
+import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import { motion } from 'framer-motion';
 import RecentGames from '../components/recentgames/RecentGames';
 import ProfileInfo from '../components/profileinfo/ProfileInfo';
-import styled from '@emotion/styled';
-import theme from '../theme';
 import { api } from '../api';
 import { User } from '../app-state/features/userPreferenceSlice';
+import { fadeUp, staggerContainer } from '../ui/motion';
 
 type HistoryGame = {
   _id: string,
@@ -18,54 +18,7 @@ type HistoryGame = {
   playedAt: string,
 }
 
-const RecentgameText=styled(Box)({
-  background:`${theme.palette.primary.main}`,
-  color:'white',
-  height:'30px',
-  width:'120px',
-  padding:'5px 5px 0 10px',
-  borderRadius:'10px 10px 0 0',
-  fontSize:'16px',
-  [theme.breakpoints.up('xl')]: {
-      fontSize:'20px',
-      width:'151px',
-      padding:'9px 10px 2px 10px',
-  },
-})
-
-const MainBox=styled(Box)({
-  height:'420px',
-  width:'1200px',
-  background:`${theme.palette.primary.main}`,
-  justifyContent:'center',
-  alignItems:'center',
-  overflow:'hidden',
-  overflowY:'scroll',
-  borderRadius:'0 10px 10px 10px',
-  padding:'0px 10px 20px 10px',
-  position:'initial',
-
-  '&::-webkit-scrollbar': {
-      width: '8px',
-    },
-    '&::-webkit-scrollbar-thumb': {
-      background:`${theme.palette.primary.main}`,
-      borderRadius: '100px',
-
-    },
-    '&::-webkit-scrollbar-track': {
-      background:`${theme.palette.primary.main}`,
-      borderRadius:'30px',
-      margin:'10px 0 10px 0'
-    },
-    [theme.breakpoints.up('xl')]: {
-      width:'1050px',
-      height:'523px',
-      padding:'0px 15px 30px 15px',
-  },
-})
-
-const MyAccount = ()=> {
+const MyAccount = () => {
   const [profile, setProfile] = useState<User | null>(null);
   const [games, setGames] = useState<HistoryGame[]>([]);
   const [error, setError] = useState('');
@@ -80,46 +33,50 @@ const MyAccount = ()=> {
   }, []);
 
   return (
-    <Box sx={{display:'flex',flexDirection:'column',justifyContent:'center', alignItems:'center'}}>
-        {error && <Typography sx={{color:'#f44336',margin:'20px'}}>{error}</Typography>}
-        <Box>
-          {profile && (
+    <motion.div variants={staggerContainer} initial="initial" animate="animate">
+      <Box sx={{ maxWidth: 820 }}>
+        {error && (
+          <Typography sx={{ color: 'error.main', marginBottom: '20px' }}>{error}</Typography>
+        )}
+        {profile && (
+          <motion.div variants={fadeUp}>
             <ProfileInfo
               Username={profile.username}
               Desc={profile.email}
               Rating={profile.rating}
               Games={profile.number_of_matches}
             />
-          )}
-        </Box>
-        <Box>
+          </motion.div>
+        )}
 
-          <RecentgameText>Recent Games</RecentgameText>
+        <motion.div variants={fadeUp}>
+          <Typography variant="h3" sx={{ margin: '36px 0 18px 0' }}>
+            Recent games
+          </Typography>
+        </motion.div>
 
+        {games.length === 0 && (
+          <motion.div variants={fadeUp}>
+            <Typography sx={{ color: 'text.secondary' }}>
+              No games yet — play an online game and it will show up here.
+            </Typography>
+          </motion.div>
+        )}
+        {games.map((game) => (
+          <motion.div key={game._id} variants={fadeUp}>
+            <RecentGames
+              variant={game.variant}
+              me={profile?.username || 'You'}
+              opponent={game.opponent.username}
+              outcome={game.outcome}
+              color={game.color}
+              date={new Date(game.playedAt).toLocaleDateString()}
+            />
+          </motion.div>
+        ))}
+      </Box>
+    </motion.div>
+  );
+};
 
-            <MainBox>
-            {games.length === 0 && (
-              <Typography sx={{color:'white',padding:'30px'}}>
-                No games yet — play an online game and it will show up here.
-              </Typography>
-            )}
-            {games.map((game)=>(
-                <RecentGames
-                  key={game._id}
-                  variant={game.variant}
-                  me={profile?.username || 'You'}
-                  opponent={game.opponent.username}
-                  outcome={game.outcome}
-                  color={game.color}
-                  date={new Date(game.playedAt).toLocaleDateString()}
-                />
-            ))}
-            </MainBox>
-
-        </Box>
-    </Box>
-
-  )
-}
-
-export default MyAccount
+export default MyAccount;

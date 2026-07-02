@@ -1,16 +1,23 @@
 import React, { useEffect, useState } from "react";
 import Typography from "@mui/material/Typography";
 import {
-	BottomNavigation,
-	BottomNavigationAction,
 	Box,
 	Button,
-	CircularProgress,
 	Divider,
+	IconButton,
 	TextField,
+	Tooltip,
 } from "@mui/material";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import CheckIcon from "@mui/icons-material/Check";
+import PersonSearchOutlinedIcon from "@mui/icons-material/PersonSearchOutlined";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { socket } from "../socket";
+import GlassCard from "../ui/GlassCard";
+import SegmentedControl from "../ui/SegmentedControl";
+import { fadeUp, pulseRing, staggerContainer } from "../ui/motion";
+import { tokens } from "../theme";
 
 const PlayOnline = () => {
 	const [time, setTime] = useState(5);
@@ -18,6 +25,7 @@ const PlayOnline = () => {
 	const [hostedRoom, setHostedRoom] = useState("");
 	const [joinCode, setJoinCode] = useState("");
 	const [error, setError] = useState("");
+	const [copied, setCopied] = useState(false);
 	const navigate = useNavigate();
 
 	useEffect(() => {
@@ -84,77 +92,177 @@ const PlayOnline = () => {
 		socket.emit("join_room", { room: joinCode });
 	};
 
+	const copyCode = () => {
+		navigator.clipboard.writeText(hostedRoom).then(() => {
+			setCopied(true);
+			setTimeout(() => setCopied(false), 1500);
+		});
+	};
+
 	return (
-		<Box sx={{ padding: "20px 40px", maxWidth: "700px" }}>
-			<Typography variant={"h3"}>Select time</Typography>
-			<BottomNavigation
-				showLabels
-				value={time}
-				onChange={(event, newValue) => setTime(newValue)}
-				sx={{ margin: "16px 0" }}
-			>
-				<BottomNavigationAction label="5 min" value={5} />
-				<BottomNavigationAction label="10 min" value={10} />
-				<BottomNavigationAction label="15 min" value={15} />
-			</BottomNavigation>
-
-			{error && (
-				<Typography sx={{ color: "#f44336", margin: "12px 0" }}>{error}</Typography>
-			)}
-
-			<Typography variant={"h4"} sx={{ margin: "24px 0 12px 0" }}>
-				Play a random opponent
-			</Typography>
-			{mode === "searching" ? (
-				<Box sx={{ display: "flex", alignItems: "center", gap: "16px" }}>
-					<CircularProgress size={28} color="secondary" />
-					<Typography>Searching for an opponent…</Typography>
-					<Button color="secondary" variant="outlined" onClick={cancelFind}>
-						Cancel
-					</Button>
-				</Box>
-			) : (
-				<Button color="secondary" variant="contained" onClick={findMatch}>
-					Find match
-				</Button>
-			)}
-
-			<Divider sx={{ margin: "32px 0", backgroundColor: "rgba(255,255,255,0.2)" }} />
-
-			<Typography variant={"h4"} sx={{ margin: "0 0 12px 0" }}>
-				Play a friend
-			</Typography>
-			{mode === "hosting" ? (
-				<Box>
-					<Typography sx={{ fontSize: "18px" }}>
-						Share this code with your friend — the game starts when they join:
+		<motion.div variants={staggerContainer} initial="initial" animate="animate">
+			<motion.div variants={fadeUp}>
+				<Typography variant="h2" sx={{ marginBottom: "28px" }}>
+					Play online
+				</Typography>
+			</motion.div>
+			<motion.div variants={fadeUp}>
+				<GlassCard sx={{ padding: { xs: "24px", sm: "36px" }, maxWidth: 640 }}>
+					<Typography variant="h4" sx={{ marginBottom: "14px", color: "text.secondary" }}>
+						Time control
 					</Typography>
-					<Typography variant="h3" sx={{ letterSpacing: "6px", margin: "12px 0" }}>
-						{hostedRoom}
-					</Typography>
-					<Box sx={{ display: "flex", alignItems: "center", gap: "16px" }}>
-						<CircularProgress size={28} color="secondary" />
-						<Typography>Waiting for your friend…</Typography>
-					</Box>
-				</Box>
-			) : (
-				<Box sx={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
-					<Button color="secondary" variant="contained" onClick={createRoom}>
-						Create room
-					</Button>
-					<Typography>or</Typography>
-					<TextField
-						label="Room code"
-						variant="filled"
-						value={joinCode}
-						onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+					<SegmentedControl
+						layoutId="time-pill"
+						options={[
+							{ label: "5 min", value: 5 },
+							{ label: "10 min", value: 10 },
+							{ label: "15 min", value: 15 },
+						]}
+						value={time}
+						onChange={setTime}
 					/>
-					<Button color="secondary" variant="contained" onClick={joinRoom}>
-						Join
-					</Button>
-				</Box>
-			)}
-		</Box>
+
+					{error && (
+						<motion.div variants={fadeUp} initial="initial" animate="animate">
+							<Typography sx={{ color: "error.main", margin: "16px 0 0 0" }}>
+								{error}
+							</Typography>
+						</motion.div>
+					)}
+
+					<Typography variant="h3" sx={{ margin: "36px 0 16px 0" }}>
+						Play a random opponent
+					</Typography>
+					{mode === "searching" ? (
+						<Box sx={{ display: "flex", alignItems: "center", gap: "24px" }}>
+							<Box
+								sx={{
+									position: "relative",
+									width: 56,
+									height: 56,
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+								}}
+							>
+								{[0, 0.9].map((delay) => (
+									<motion.div
+										key={delay}
+										animate={pulseRing.animate}
+										transition={{ ...pulseRing.animate.transition, delay }}
+										style={{
+											position: "absolute",
+											inset: 0,
+											borderRadius: "50%",
+											border: "2px solid rgba(16,185,129,0.6)",
+										}}
+									/>
+								))}
+								<Box
+									sx={{
+										width: 56,
+										height: 56,
+										borderRadius: "50%",
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "center",
+										background: "rgba(16,185,129,0.14)",
+										color: "primary.light",
+									}}
+								>
+									<PersonSearchOutlinedIcon />
+								</Box>
+							</Box>
+							<Typography sx={{ color: "text.secondary" }}>
+								Searching for an opponent…
+							</Typography>
+							<Button variant="outlined" onClick={cancelFind}>
+								Cancel
+							</Button>
+						</Box>
+					) : (
+						<Button variant="contained" size="large" onClick={findMatch}>
+							Find match
+						</Button>
+					)}
+
+					<Divider sx={{ margin: "36px 0" }} />
+
+					<Typography variant="h3" sx={{ marginBottom: "16px" }}>
+						Play a friend
+					</Typography>
+					{mode === "hosting" ? (
+						<Box>
+							<Typography sx={{ color: "text.secondary", marginBottom: "16px" }}>
+								Share this code with your friend — the game starts when they join:
+							</Typography>
+							<Box sx={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+								<Box
+									sx={{
+										padding: "12px 24px",
+										borderRadius: "12px",
+										border: "1px dashed rgba(16,185,129,0.5)",
+										background: "rgba(16,185,129,0.06)",
+									}}
+								>
+									<Typography
+										sx={{
+											fontFamily: tokens.fontDisplay,
+											fontSize: "1.8rem",
+											fontWeight: 700,
+											letterSpacing: "6px",
+											color: "primary.light",
+										}}
+									>
+										{hostedRoom}
+									</Typography>
+								</Box>
+								<Tooltip title={copied ? "Copied!" : "Copy code"}>
+									<IconButton onClick={copyCode} sx={{ color: copied ? "primary.light" : "text.secondary" }}>
+										{copied ? <CheckIcon /> : <ContentCopyIcon />}
+									</IconButton>
+								</Tooltip>
+							</Box>
+							<Box sx={{ display: "flex", alignItems: "center", gap: "16px" }}>
+								<motion.div
+									animate={{ opacity: [0.5, 1, 0.5] }}
+									transition={{ duration: 2, repeat: Infinity }}
+								>
+									<Typography sx={{ color: "text.secondary" }}>
+										Waiting for your friend…
+									</Typography>
+								</motion.div>
+							</Box>
+						</Box>
+					) : (
+						<Box
+							sx={{
+								display: "flex",
+								alignItems: "center",
+								gap: "14px",
+								flexWrap: "wrap",
+							}}
+						>
+							<Button variant="contained" onClick={createRoom}>
+								Create room
+							</Button>
+							<Typography sx={{ color: "text.secondary" }}>or</Typography>
+							<TextField
+								label="Room code"
+								variant="filled"
+								size="small"
+								value={joinCode}
+								onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+								sx={{ width: 160 }}
+							/>
+							<Button variant="outlined" onClick={joinRoom}>
+								Join
+							</Button>
+						</Box>
+					)}
+				</GlassCard>
+			</motion.div>
+		</motion.div>
 	);
 };
 

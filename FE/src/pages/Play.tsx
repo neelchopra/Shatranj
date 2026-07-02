@@ -1,80 +1,90 @@
 import React from 'react';
 import Typography from '@mui/material/Typography';
 import { Box } from '@mui/material';
-import styled from '@emotion/styled';
-import theme from '../theme';
 import { NavLink } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
+import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import GlassCard from '../ui/GlassCard';
+import { fadeUp, staggerContainer } from '../ui/motion';
 
-const onlineDesc = 'Play a rated game against a random opponent, or create a private room and invite a friend with a code. 5, 10 and 15 minute time controls.'
-const computerDesc = 'Practice against Stockfish at three difficulty levels. No account needed — jump straight into a game.'
+const modes = [
+    {
+        title: 'Online',
+        desc: 'Play a rated game against a random opponent, or create a private room and invite a friend with a code. 5, 10 and 15 minute time controls.',
+        to: '/play/online',
+        icon: <PublicOutlinedIcon sx={{ fontSize: 30 }} />,
+    },
+    {
+        title: 'vs Computer',
+        desc: 'Practice against Stockfish at three difficulty levels. No account needed — jump straight into a game.',
+        to: '/play/computer',
+        icon: <SmartToyOutlinedIcon sx={{ fontSize: 30 }} />,
+    },
+];
 
-const FormatBox =styled(Box)({
-    backgroundColor:`${theme.palette.primary.main}`,
-    margin:'0px 0 30px 150px',
-    padding:'20px',
-    borderRadius:'20px',
-    border:'solid 1px #5E5E5E87',
-    width:'450px',
-    height:'180px',
-    boxShadow:'0px 2px #5E5E5E40',
-    display:'flex',    
-    flexDirection:'column',
-    alignItems:'start',
-    justifyContent:'start',
-    textAlign:'start',
-    [theme.breakpoints.up('xl')]: {
-        margin:'0px 0 30px 150px',
-        width:'530px',
-        height:'200px',
-        padding:'25px',
-    },  
-
-    
-})
-const FormatText =styled(Typography)({
-    color:'white',
-    fontSize:'32px',
-    fontWeight:700, 
-    
-    [theme.breakpoints.up('xl')]: {
-        fontSize:'36x',
-    },  
-})
-const FormatDesc =styled(Typography)({
-    color:'white',
-    fontSize:'16px',
-    fontWeight:700,
-    [theme.breakpoints.up('xl')]: {
-        fontSize:'18px',
-    },  
-})
-const MainBox=styled(Box)({
-    padding:'70px 0 0 40px',[theme.breakpoints.up('xl')]: {padding:'100px'}
-})
-
-
-const Play = ()=>{
-    return(
-        <MainBox>
-            <NavLink
-                style={{textDecoration:'none'}}
-                to={"/play/online"}
+const Play = () => {
+    return (
+        <motion.div variants={staggerContainer} initial="initial" animate="animate">
+            <motion.div variants={fadeUp}>
+                <Typography variant="h2" sx={{ marginBottom: '32px' }}>
+                    Choose your game
+                </Typography>
+            </motion.div>
+            <Box
+                sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                    gap: 3,
+                    maxWidth: 900,
+                }}
             >
-                <FormatBox>
-                    <FormatText>Online</FormatText>
-                    <FormatDesc>{onlineDesc}</FormatDesc>
-                </FormatBox>
-            </NavLink>
-            <NavLink
-                style={{textDecoration:'none'}}
-                to={"/play/computer"}
-            >
-                <FormatBox>
-                    <FormatText>vs Computer</FormatText>
-                    <FormatDesc>{computerDesc}</FormatDesc>
-                </FormatBox>
-            </NavLink>
-        </MainBox>
-    )
-}
+                {modes.map((mode) => (
+                    <motion.div key={mode.to} variants={fadeUp}>
+                        <NavLink to={mode.to} style={{ textDecoration: 'none' }}>
+                            <GlassCard hover sx={{ padding: '32px', height: '100%' }}>
+                                <Box
+                                    sx={{
+                                        width: 56,
+                                        height: 56,
+                                        borderRadius: '14px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        background: 'rgba(16,185,129,0.12)',
+                                        color: 'primary.light',
+                                        marginBottom: '20px',
+                                    }}
+                                >
+                                    {mode.icon}
+                                </Box>
+                                <Typography variant="h3" sx={{ marginBottom: '12px' }}>
+                                    {mode.title}
+                                </Typography>
+                                <Typography
+                                    sx={{ color: 'text.secondary', lineHeight: 1.6, marginBottom: '20px' }}
+                                >
+                                    {mode.desc}
+                                </Typography>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        color: 'primary.light',
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    Play <ArrowForwardIcon sx={{ fontSize: 18 }} />
+                                </Box>
+                            </GlassCard>
+                        </NavLink>
+                    </motion.div>
+                ))}
+            </Box>
+        </motion.div>
+    );
+};
+
 export default Play;
