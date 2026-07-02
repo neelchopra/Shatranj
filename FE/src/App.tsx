@@ -1,40 +1,34 @@
 import React from 'react';
-import Navbar from './components/navbar/Navbar';
-import Appbar from './components/appbar/Appbar';
-import { Route, Routes } from 'react-router-dom';
-import Box from '@mui/material/Box';
+import { Route, Routes, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import Home from './pages/Home';
 import Play from './pages/Play';
 import LeaderboardPage from './pages/LeaderboardPage';
 import FriendsPage from './pages/FriendsPage';
-import { styled, useTheme } from '@mui/material';
-import bgimg from './images/bachground.png'
 import MyAccount from './pages/MyAccount';
 import PlayOnline from './pages/PlayOnline';
 import PlayComputer from './pages/PlayComputer';
 import StandardGame from './Games/StandardGame';
 import StandardBotGame from './Games/StandardBotGame';
 import RequireAuth from './utilities/RequireAuth';
+import NotFound from './pages/NotFound';
+import AppShell from './layout/AppShell';
+import { pageTransition } from './ui/motion';
 
 function App() {
-  const theme = useTheme();
-
-  const PageBox=styled(Box)({
-    backgroundImage:`require(${bgimg})`,
-    margin:'90px 0 0 270px',
-    [theme.breakpoints.up('xl')]: {
-      margin: '120px 0 0 300px',
-      
-    },
-  });
+  const location = useLocation();
 
   return (
-      <Box>
-        <Appbar/>
-        <Navbar/>
-        <PageBox>
-          {/* <img src={require('./images/bachground.png')}></img> */}
-          <Routes>
+    <AppShell>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={location.pathname}
+          variants={pageTransition}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+        >
+          <Routes location={location}>
             <Route path="/" element={<Home/>}/>
             <Route path="/play">
               <Route path="" element={<Play/>}/>
@@ -46,10 +40,11 @@ function App() {
             <Route path="/leaderboard" element={<LeaderboardPage/>}/>
             <Route path="/friends" element={<RequireAuth><FriendsPage/></RequireAuth>}/>
             <Route path="/my-account" element={<RequireAuth><MyAccount/></RequireAuth>}/>
-            <Route path="*" element={<h1>404 NOT FOUND</h1>}/>
+            <Route path="*" element={<NotFound/>}/>
           </Routes>
-        </PageBox>
-      </Box>
+        </motion.div>
+      </AnimatePresence>
+    </AppShell>
   );
 }
 
