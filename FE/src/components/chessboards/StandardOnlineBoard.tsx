@@ -6,12 +6,12 @@ import { setGameState } from "../../app-state/features/gameSlice";
 import { Chess } from "chess.js";
 import { socket } from "../../socket";
 import { evaluateGame } from "../../utilities/chessResult";
-
-const boardWidth = (window.innerHeight * 80 * 75) / 10000;
+import { tokens } from "../../theme";
 
 type Props = {
 	color: string; // 'white' | 'black' — this client's side, assigned by the server
 	room: string;
+	boardWidth: number;
 };
 
 const StandardOnlineBoard = (props: Props) => {
@@ -102,9 +102,7 @@ const StandardOnlineBoard = (props: Props) => {
 			newSquares = {
 				...newSquares,
 				[key]: {
-					background: chess.get(key)
-						? "radial-gradient(closest-side, #97aef3 80%, transparent 40%)"
-						: "radial-gradient(closest-side, #97aef3 30%, transparent 40%)",
+					background: chess.get(key) ? tokens.board.hintCapture : tokens.board.hintMove,
 				},
 			};
 		});
@@ -115,10 +113,10 @@ const StandardOnlineBoard = (props: Props) => {
 		<Chessboard
 			position={position}
 			onPieceDrop={handleDrop}
-			boardWidth={boardWidth}
+			boardWidth={props.boardWidth}
 			onSquareClick={handleClick}
-			customDarkSquareStyle={{ backgroundColor: "#B7C0D8" }}
-			customLightSquareStyle={{ backgroundColor: "#E8EDF9" }}
+			customDarkSquareStyle={{ backgroundColor: tokens.board.dark }}
+			customLightSquareStyle={{ backgroundColor: tokens.board.light }}
 			customSquareStyles={{ ...optionSquares }}
 			animationDuration={100}
 			arePremovesAllowed={false}

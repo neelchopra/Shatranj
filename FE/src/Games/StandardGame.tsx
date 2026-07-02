@@ -12,11 +12,12 @@ import {
 import Timer from "../utilities/Timer";
 import GameControls from "../utilities/GameControls";
 import { useAppDispatch, useAppSelector } from "../app-state/hooks";
-import ResultModal from "../utilities/ResultModal";
+import ResultModal, { RatingUpdate } from "../utilities/ResultModal";
 import { socket } from "../socket";
 import { initGame, setWinner } from "../app-state/features/gameSlice";
 import { updateRating } from "../app-state/features/userPreferenceSlice";
 import { resultToScore, scoreToResult } from "../utilities/chessResult";
+import useBoardWidth from "../hooks/useBoardWidth";
 
 type GameNavState = {
 	room: string;
@@ -37,7 +38,11 @@ const StandardGame = () => {
 
 	const [drawOffered, setDrawOffered] = useState(false);
 	const [notice, setNotice] = useState("");
+	const [ratingUpdate, setRatingUpdate] = useState<RatingUpdate>(null);
 	const reportedRef = useRef(false);
+
+	const boardContainerRef = useRef<HTMLDivElement>(null);
+	const boardWidth = useBoardWidth(boardContainerRef);
 
 	// Stable clock expiry timestamps — created once per game mount.
 	const [expiry] = useState(() => {
@@ -81,7 +86,7 @@ const StandardGame = () => {
 		}) => {
 			const me = data.white.username === user?.username ? data.white : data.black;
 			dispatch(updateRating(me.rating));
-			setNotice(`New rating: ${me.rating} (${me.delta >= 0 ? "+" : ""}${me.delta})`);
+			setRatingUpdate({ rating: me.rating, delta: me.delta });
 		};
 
 		socket.on("game_ended", onGameEnded);
@@ -115,14 +120,13 @@ const StandardGame = () => {
 	return (
 		<Box
 			sx={{
-				padding: "30px",
-				display: "flex",
-				justifyContent: "center",
-				alignItems: "center",
+				display: "grid",
+				gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 340px" },
+				gap: 3,
+				alignItems: "start",
 			}}
 		>
-			<Box sx={{ position: "relative", marginRight: "100px" }}>
-				<ResultModal />
+			<Box>
 				<Timer
 					avatar=""
 					name={state.opponent.username}
@@ -131,7 +135,20 @@ const StandardGame = () => {
 					player={opponentColor}
 				/>
 
-				<StandardOnlineBoard color={state.color} room={state.room} />
+				<Box ref={boardContainerRef} sx={{ display: "flex", justifyContent: "center" }}>
+					{boardWidth > 0 && (
+						<Box
+							sx={{
+								borderRadius: "12px",
+								overflow: "hidden",
+								border: "1px solid rgba(255,255,255,0.08)",
+								boxShadow: "0 8px 32px rgba(0,0,0,0.45)",
+							}}
+						>
+							<StandardOnlineBoard color={state.color} room={state.room} boardWidth={boardWidth} />
+						</Box>
+					)}
+				</Box>
 
 				<Timer
 					avatar=""
@@ -143,13 +160,15 @@ const StandardGame = () => {
 			</Box>
 			<GameControls room={state.room} isOnline={true} />
 
+			<ResultModal ratingUpdate={ratingUpdate} myColor={state.color} />
+
 			<Dialog open={drawOffered}>
 				<DialogTitle>{state.opponent.username} offers a draw</DialogTitle>
 				<DialogActions>
-					<Button onClick={() => respondToDraw(true)} color="secondary" variant="contained">
+					<Button onClick={() => respondToDraw(true)} variant="contained">
 						Accept
 					</Button>
-					<Button onClick={() => respondToDraw(false)} color="secondary">
+					<Button onClick={() => respondToDraw(false)}>
 						Decline
 					</Button>
 				</DialogActions>

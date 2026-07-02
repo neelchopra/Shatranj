@@ -1,46 +1,86 @@
 import React from 'react'
 import { useAppDispatch, useAppSelector } from '../app-state/hooks'
-import { Box, Typography, useTheme, Button } from '@mui/material';
+import { Box, Typography, Button, Dialog, Grow } from '@mui/material';
+import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined';
+import HandshakeOutlinedIcon from '@mui/icons-material/HandshakeOutlined';
+import SentimentDissatisfiedOutlinedIcon from '@mui/icons-material/SentimentDissatisfiedOutlined';
+import { TransitionProps } from '@mui/material/transitions';
 import { closeModal } from '../app-state/features/gameSlice';
+import AnimatedNumber from '../ui/AnimatedNumber';
 
-const ResultModal = () => {
-    const theme = useTheme()
+const GrowTransition = React.forwardRef(function GrowTransition(
+    props: TransitionProps & { children: React.ReactElement },
+    ref: React.Ref<unknown>,
+) {
+    return <Grow ref={ref} {...props} />;
+});
+
+export type RatingUpdate = { rating: number; delta: number } | null;
+
+const ResultModal = ({ ratingUpdate, myColor }: { ratingUpdate?: RatingUpdate; myColor?: string }) => {
     const dispatch  = useAppDispatch();
-    const open = useAppSelector((state)=>{
-        return state.game.gameState.isGameOver
-    })
-    const result = useAppSelector((state)=>{
-        return state.game.gameState.result
-    })
+    const open = useAppSelector((state)=> state.game.gameState.isGameOver)
+    const result = useAppSelector((state)=> state.game.gameState.result)
     const handleClose = () => {
         dispatch(closeModal())
     }
+
+    const isDraw = result === 'draw' || result === 'abort';
+    const won = !isDraw && myColor && result === myColor;
+
+    const icon = isDraw
+        ? <HandshakeOutlinedIcon sx={{ fontSize: 40 }} />
+        : won
+            ? <EmojiEventsOutlinedIcon sx={{ fontSize: 40 }} />
+            : <SentimentDissatisfiedOutlinedIcon sx={{ fontSize: 40 }} />;
+
     const resultText =
-        result === 'white' ? 'White wins!' :
-        result === 'black' ? 'Black wins!' :
+        result === 'white' ? 'White wins' :
+        result === 'black' ? 'Black wins' :
         result === 'draw' ? 'Draw' :
         result === 'abort' ? 'Game aborted' : result;
+
     return (
-            <Box sx={{
-                height:'200px',
-                width:'200px',
-                border:'2px solid white',
-                backgroundColor:theme.palette.primary.dark,
-                borderRadius:'10px',
-                position:'absolute',
-                top:0,
-                bottom:0,
-                left:0,
-                right:0,    
-                margin:'auto',
-                zIndex:'10',
-                display:`${open? '' : 'none'}`
-            }}>
-                <Typography variant='h3'>
+        <Dialog open={open} onClose={handleClose} TransitionComponent={GrowTransition}>
+            <Box sx={{ padding: '40px', textAlign: 'center', minWidth: 280 }}>
+                <Box
+                    sx={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 20px auto',
+                        background: isDraw
+                            ? 'rgba(148,163,184,0.15)'
+                            : won
+                                ? 'rgba(52,211,153,0.15)'
+                                : 'rgba(248,113,113,0.15)',
+                        color: isDraw ? 'text.secondary' : won ? 'success.main' : 'error.main',
+                    }}
+                >
+                    {icon}
+                </Box>
+                <Typography variant='h2' sx={{ marginBottom: '8px' }}>
                     {resultText}
                 </Typography>
-                <Button onClick={handleClose} color='secondary' variant='contained'>X</Button>
+                {ratingUpdate && (
+                    <Typography sx={{ color: 'text.secondary', marginBottom: '24px' }}>
+                        New rating <AnimatedNumber value={ratingUpdate.rating} />{' '}
+                        <Box
+                            component="span"
+                            sx={{ color: ratingUpdate.delta >= 0 ? 'success.main' : 'error.main', fontWeight: 700 }}
+                        >
+                            ({ratingUpdate.delta >= 0 ? '+' : ''}{ratingUpdate.delta})
+                        </Box>
+                    </Typography>
+                )}
+                <Button onClick={handleClose} variant='contained' sx={{ marginTop: ratingUpdate ? 0 : '16px' }}>
+                    Close
+                </Button>
             </Box>
+        </Dialog>
     )
     }
 
