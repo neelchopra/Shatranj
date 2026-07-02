@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
 const Friends = require("../models/friends.model");
 const auth = require("../middleware/auth");
+const { notifyUser, isUserOnline } = require("../socket-handlers");
 
 const signToken = (userId) =>
 	jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -108,11 +109,13 @@ router.get("/search-users", auth, async (req, res) => {
 });
 
 /**
- * GET /users/friends — friends of the logged-in user
+ * GET /users/friends — accepted friends of the logged-in user, with live presence
  */
 router.get("/friends", auth, async (req, res) => {
 	try {
+		const io = req.app.get("io");
 		const links = await Friends.find({
+			status: "accepted",
 			$or: [{ player_id: req.userId }, { friend_id: req.userId }],
 		});
 		const friendIds = links.map((link) =>
@@ -121,34 +124,139 @@ router.get("/friends", auth, async (req, res) => {
 		const friends = await User.find({ _id: { $in: friendIds } }).select(
 			"username rating number_of_matches"
 		);
-		res.json(friends);
+		res.json(
+			friends.map((friend) => ({
+				...friend.toObject(),
+				online: isUserOnline(io, friend._id.toString()),
+			}))
+		);
 	} catch (err) {
 		res.status(500).json({ message: "Could not load friends" });
 	}
 });
 
 /**
- * POST /users/add-friend
- * Body: { friend_id }
+ * GET /users/friend-requests — pending requests involving the logged-in user
  */
-router.post("/add-friend", auth, async (req, res) => {
+router.get("/friend-requests", auth, async (req, res) => {
 	try {
-		const { friend_id } = req.body;
-		if (!friend_id) return res.status(400).json({ message: "friend_id is required" });
-		if (friend_id === req.userId) {
+		const [incomingLinks, outgoingLinks] = await Promise.all([
+			Friends.find({ status: "pending", friend_id: req.userId }),
+			Friends.find({ status: "pending", player_id: req.userId }),
+		]);
+		const otherIds = [
+			...incomingLinks.map((l) => l.player_id),
+			...outgoingLinks.map((l) => l.friend_id),
+		];
+		const users = await User.find({ _id: { $in: otherIds } }).select("username rating");
+		const byId = Object.fromEntries(users.map((u) => [u._id.toString(), u]));
+
+		res.json({
+			incoming: incomingLinks.map((l) => ({
+				requestId: l._id,
+				user: byId[l.player_id.toString()],
+			})),
+			outgoing: outgoingLinks.map((l) => ({
+				requestId: l._id,
+				user: byId[l.friend_id.toString()],
+			})),
+		});
+	} catch (err) {
+		res.status(500).json({ message: "Could not load friend requests" });
+	}
+});
+
+/**
+ * POST /users/friend-requests
+ * Body: { recipient_id }
+ */
+router.post("/friend-requests", auth, async (req, res) => {
+	try {
+		const { recipient_id } = req.body;
+		if (!recipient_id) return res.status(400).json({ message: "recipient_id is required" });
+		if (recipient_id === req.userId) {
 			return res.status(400).json({ message: "You cannot add yourself as a friend" });
 		}
 		const exists = await Friends.findOne({
 			$or: [
-				{ player_id: req.userId, friend_id },
-				{ player_id: friend_id, friend_id: req.userId },
+				{ player_id: req.userId, friend_id: recipient_id },
+				{ player_id: recipient_id, friend_id: req.userId },
 			],
 		});
-		if (exists) return res.status(409).json({ message: "Already friends" });
-		await new Friends({ player_id: req.userId, friend_id }).save();
-		res.status(201).json({ message: "Friend added" });
+		if (exists) {
+			return res.status(409).json({
+				message: exists.status === "accepted" ? "Already friends" : "Request already pending",
+			});
+		}
+		await new Friends({ player_id: req.userId, friend_id: recipient_id }).save();
+
+		const io = req.app.get("io");
+		const requester = await User.findById(req.userId).select("username");
+		notifyUser(io, recipient_id, "friend_request_received", {
+			from: { id: req.userId, username: requester.username },
+		});
+		res.status(201).json({ message: "Friend request sent" });
 	} catch (err) {
-		res.status(500).json({ message: "Could not add friend" });
+		res.status(500).json({ message: "Could not send friend request" });
+	}
+});
+
+/**
+ * POST /users/friend-requests/:id/accept
+ */
+router.post("/friend-requests/:id/accept", auth, async (req, res) => {
+	try {
+		const request = await Friends.findOne({
+			_id: req.params.id,
+			friend_id: req.userId,
+			status: "pending",
+		});
+		if (!request) return res.status(404).json({ message: "Request not found" });
+		request.status = "accepted";
+		await request.save();
+
+		const io = req.app.get("io");
+		const accepter = await User.findById(req.userId).select("username");
+		notifyUser(io, request.player_id.toString(), "friend_request_accepted", {
+			by: { id: req.userId, username: accepter.username },
+		});
+		res.json({ message: "Friend request accepted" });
+	} catch (err) {
+		res.status(500).json({ message: "Could not accept friend request" });
+	}
+});
+
+/**
+ * POST /users/friend-requests/:id/decline — recipient declines
+ */
+router.post("/friend-requests/:id/decline", auth, async (req, res) => {
+	try {
+		const request = await Friends.findOneAndDelete({
+			_id: req.params.id,
+			friend_id: req.userId,
+			status: "pending",
+		});
+		if (!request) return res.status(404).json({ message: "Request not found" });
+		res.json({ message: "Friend request declined" });
+	} catch (err) {
+		res.status(500).json({ message: "Could not decline friend request" });
+	}
+});
+
+/**
+ * DELETE /users/friend-requests/:id — requester cancels their own outgoing request
+ */
+router.delete("/friend-requests/:id", auth, async (req, res) => {
+	try {
+		const request = await Friends.findOneAndDelete({
+			_id: req.params.id,
+			player_id: req.userId,
+			status: "pending",
+		});
+		if (!request) return res.status(404).json({ message: "Request not found" });
+		res.json({ message: "Friend request cancelled" });
+	} catch (err) {
+		res.status(500).json({ message: "Could not cancel friend request" });
 	}
 });
 

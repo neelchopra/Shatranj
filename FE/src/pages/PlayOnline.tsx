@@ -11,7 +11,6 @@ import {
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
 import PersonSearchOutlinedIcon from "@mui/icons-material/PersonSearchOutlined";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { socket } from "../socket";
 import GlassCard from "../ui/GlassCard";
@@ -26,17 +25,11 @@ const PlayOnline = () => {
 	const [joinCode, setJoinCode] = useState("");
 	const [error, setError] = useState("");
 	const [copied, setCopied] = useState(false);
-	const navigate = useNavigate();
 
 	useEffect(() => {
-		const onGameStart = (data: {
-			room: string;
-			color: string;
-			time: number;
-			opponent: { username: string; rating: number };
-		}) => {
-			navigate("/play/online/game", { state: data });
-		};
+		// "game_start" (matchmaking, manual join, or a challenge accepted
+		// elsewhere) is handled globally by SocketNotifications/AppShell —
+		// this page only needs its own status events.
 		const onRoomCreated = (data: { room: string }) => {
 			setHostedRoom(data.room);
 			setMode("hosting");
@@ -50,19 +43,17 @@ const PlayOnline = () => {
 			setMode("idle");
 		};
 
-		socket.on("game_start", onGameStart);
 		socket.on("room_created", onRoomCreated);
 		socket.on("room_error", onRoomError);
 		socket.on("connect_error", onConnectError);
 
 		return () => {
-			socket.off("game_start", onGameStart);
 			socket.off("room_created", onRoomCreated);
 			socket.off("room_error", onRoomError);
 			socket.off("connect_error", onConnectError);
 			socket.emit("cancel_find");
 		};
-	}, [navigate]);
+	}, []);
 
 	const findMatch = () => {
 		setError("");

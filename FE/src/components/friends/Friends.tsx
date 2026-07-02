@@ -1,12 +1,20 @@
 import React from 'react';
-import { Avatar, Button, Typography, Box } from '@mui/material';
-import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
+import { Avatar, Button, Typography, Box, Tooltip } from '@mui/material';
 import GlassCard from '../../ui/GlassCard';
 
+export type FriendAction = {
+  label: string;
+  onClick: () => void;
+  variant?: 'contained' | 'outlined' | 'text';
+  color?: 'primary' | 'error' | 'inherit';
+  disabled?: boolean;
+};
+
 export interface FriendsProps {
-  name: string,
-  desc: string,
-  onAdd?: () => void,
+  name: string;
+  desc: string;
+  online?: boolean;
+  actions?: FriendAction[];
 }
 
 const Friends = (props: FriendsProps) => {
@@ -18,20 +26,39 @@ const Friends = (props: FriendsProps) => {
         gap: '18px',
         padding: '16px 20px',
         marginBottom: '14px',
+        flexWrap: { xs: 'wrap', sm: 'nowrap' },
       }}
     >
-      <Avatar
-        sx={{
-          height: 52,
-          width: 52,
-          fontSize: '1.4rem',
-          fontWeight: 700,
-          background: 'rgba(16,185,129,0.16)',
-          color: 'primary.light',
-        }}
-      >
-        {props.name[0]?.toUpperCase()}
-      </Avatar>
+      <Box sx={{ position: 'relative' }}>
+        <Avatar
+          sx={{
+            height: 52,
+            width: 52,
+            fontSize: '1.4rem',
+            fontWeight: 700,
+            background: 'rgba(16,185,129,0.16)',
+            color: 'primary.light',
+          }}
+        >
+          {props.name[0]?.toUpperCase()}
+        </Avatar>
+        {props.online !== undefined && (
+          <Tooltip title={props.online ? 'Online' : 'Offline'}>
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                width: 14,
+                height: 14,
+                borderRadius: '50%',
+                border: '2px solid #12151C',
+                background: props.online ? '#34D399' : '#64748B',
+              }}
+            />
+          </Tooltip>
+        )}
+      </Box>
       <Box sx={{ flexGrow: 1, minWidth: 0 }}>
         <Typography variant="h4" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {props.name}
@@ -40,15 +67,21 @@ const Friends = (props: FriendsProps) => {
           {props.desc}
         </Typography>
       </Box>
-      {props.onAdd && (
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<PersonAddOutlinedIcon />}
-          onClick={props.onAdd}
-        >
-          Add
-        </Button>
+      {props.actions && props.actions.length > 0 && (
+        <Box sx={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+          {props.actions.map((action) => (
+            <Button
+              key={action.label}
+              variant={action.variant || 'outlined'}
+              color={action.color || 'primary'}
+              size="small"
+              disabled={action.disabled}
+              onClick={action.onClick}
+            >
+              {action.label}
+            </Button>
+          ))}
+        </Box>
       )}
     </GlassCard>
   );

@@ -102,6 +102,10 @@ const theme = createTheme({
 				"::selection": {
 					background: "rgba(16,185,129,0.3)",
 				},
+				a: {
+					color: "inherit",
+					textDecoration: "none",
+				},
 				"*::-webkit-scrollbar": { width: "8px", height: "8px" },
 				"*::-webkit-scrollbar-track": { background: "transparent" },
 				"*::-webkit-scrollbar-thumb": {

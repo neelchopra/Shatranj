@@ -1,7 +1,21 @@
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const User = require("./models/user.model");
+const Friends = require("./models/friends.model");
 const GameHistory = require("./models/game-history.model");
+
+const userRoom = (userId) => `user:${userId}`;
+
+/** Push an event to every socket a specific user has open, regardless of tab count. */
+const notifyUser = (io, userId, event, payload) => {
+	io.to(userRoom(userId)).emit(event, payload);
+};
+
+/** Whether a user currently has at least one live socket connected. */
+const isUserOnline = (io, userId) => {
+	const room = io.sockets.adapter.rooms.get(userRoom(userId));
+	return !!room && room.size > 0;
+};
 
 /**
  * In-memory state. Resets on server restart — acceptable for this scope
@@ -136,6 +150,42 @@ function attachSocket(io) {
 
 	io.on("connection", (socket) => {
 		console.log(`${socket.data.user.username} connected`);
+		socket.join(userRoom(socket.data.user.id));
+
+		socket.on("challenge_friend", async ({ friendUserId, time }) => {
+			try {
+				const friendship = await Friends.findOne({
+					status: "accepted",
+					$or: [
+						{ player_id: socket.data.user.id, friend_id: friendUserId },
+						{ player_id: friendUserId, friend_id: socket.data.user.id },
+					],
+				});
+				if (!friendship) {
+					return socket.emit("room_error", { message: "You can only challenge friends" });
+				}
+				if (!isUserOnline(io, friendUserId)) {
+					return socket.emit("room_error", { message: "That friend is offline right now" });
+				}
+				const code = makeRoomCode();
+				rooms.set(code, { host: socket, time, pending: true });
+				notifyUser(io, friendUserId, "challenge_received", {
+					from: { id: socket.data.user.id, username: socket.data.user.username, rating: socket.data.user.rating },
+					time,
+					room: code,
+				});
+				socket.emit("challenge_sent", { room: code, to: friendUserId });
+			} catch (err) {
+				socket.emit("room_error", { message: "Could not send challenge" });
+			}
+		});
+
+		socket.on("challenge_declined", ({ room }) => {
+			const pending = rooms.get(room);
+			if (!pending || !pending.pending) return;
+			rooms.delete(room);
+			notifyUser(io, pending.host.data.user.id, "challenge_declined", { room });
+		});
 
 		socket.on("find_match", ({ time }) => {
 			removeFromQueues(socket);
@@ -232,3 +282,5 @@ function attachSocket(io) {
 }
 
 module.exports = attachSocket;
+module.exports.notifyUser = notifyUser;
+module.exports.isUserOnline = isUserOnline;

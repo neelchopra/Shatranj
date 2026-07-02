@@ -125,14 +125,38 @@ async function main() {
 	check("search finds bob", search.data.length === 1 && search.data[0].username === "bob");
 
 	// ---------- REST: friends ----------
-	console.log("\n== REST friends ==");
+	console.log("\n== REST friend requests ==");
 	const bobId = search.data[0]._id;
-	const addF = await axios.post(`${BASE}/users/add-friend`, { friend_id: bobId }, auth(aliceToken));
-	check("add friend -> 201", addF.status === 201);
-	const dupF = await axios.post(`${BASE}/users/add-friend`, { friend_id: bobId }, { ...auth(aliceToken), validateStatus: () => true });
-	check("duplicate friend -> 409", dupF.status === 409);
-	const bobFriends = await axios.get(`${BASE}/users/friends`, auth(bobToken));
-	check("friendship is symmetric (bob sees alice)", bobFriends.data.length === 1 && bobFriends.data[0].username === "alice");
+	const reqSend = await axios.post(`${BASE}/users/friend-requests`, { recipient_id: bobId }, auth(aliceToken));
+	check("send friend request -> 201", reqSend.status === 201);
+	const reqDup = await axios.post(`${BASE}/users/friend-requests`, { recipient_id: bobId }, { ...auth(aliceToken), validateStatus: () => true });
+	check("duplicate request -> 409", reqDup.status === 409);
+
+	const bobIncoming = await axios.get(`${BASE}/users/friend-requests`, auth(bobToken));
+	check("bob sees alice's incoming request", bobIncoming.data.incoming.length === 1 && bobIncoming.data.incoming[0].user.username === "alice");
+	const aliceOutgoing = await axios.get(`${BASE}/users/friend-requests`, auth(aliceToken));
+	check("alice sees her outgoing request to bob", aliceOutgoing.data.outgoing.length === 1 && aliceOutgoing.data.outgoing[0].user.username === "bob");
+
+	const requestId = bobIncoming.data.incoming[0].requestId;
+	const wrongAccept = await axios.post(`${BASE}/users/friend-requests/${requestId}/accept`, {}, { ...auth(aliceToken), validateStatus: () => true });
+	check("only the recipient can accept -> 404", wrongAccept.status === 404);
+	const accept = await axios.post(`${BASE}/users/friend-requests/${requestId}/accept`, {}, auth(bobToken));
+	check("bob accepts the request", accept.status === 200);
+
+	const aliceFriendsPre = await axios.get(`${BASE}/users/friends`, auth(aliceToken));
+	check("friendship is symmetric and includes presence", aliceFriendsPre.data.length === 1 && aliceFriendsPre.data[0].username === "bob" && aliceFriendsPre.data[0].online === false);
+
+	const carolReg = await axios.post(`${BASE}/users/register`, { username: "carol", email: "carol@test.com", password: "secret123" });
+	const carolToken = carolReg.data.token;
+	const carolId = carolReg.data.user._id;
+	const declineReq = await axios.post(`${BASE}/users/friend-requests`, { recipient_id: carolId }, auth(aliceToken));
+	check("alice can send a second, independent request (to carol)", declineReq.status === 201);
+	const carolIncoming = await axios.get(`${BASE}/users/friend-requests`, auth(carolToken));
+	const carolReqId = carolIncoming.data.incoming[0].requestId;
+	const decline = await axios.post(`${BASE}/users/friend-requests/${carolReqId}/decline`, {}, auth(carolToken));
+	check("carol declines alice's request", decline.status === 200);
+	const aliceOutgoing2 = await axios.get(`${BASE}/users/friend-requests`, auth(aliceToken));
+	check("declined request no longer pending for alice", aliceOutgoing2.data.outgoing.length === 0);
 
 	// ---------- Sockets: auth ----------
 	console.log("\n== Socket auth ==");
@@ -145,6 +169,54 @@ async function main() {
 	const bob = io(BASE, { auth: { token: bobToken }, transports: ["websocket"], reconnection: false });
 	await Promise.all([waitFor(alice, "connect"), waitFor(bob, "connect")]);
 	check("both sockets connect with valid tokens", alice.connected && bob.connected);
+
+	// ---------- Friend requests: live notification + presence ----------
+	console.log("\n== Friend request notifications ==");
+	const notified = waitFor(bob, "friend_request_received");
+	const daveReg = await axios.post(`${BASE}/users/register`, { username: "dave", email: "dave@test.com", password: "secret123" });
+	// bob already has an accepted friendship with alice; use dave to test a fresh live-notify request to bob
+	const daveToBob = await axios.post(`${BASE}/users/friend-requests`, { recipient_id: bobId }, auth(daveReg.data.token));
+	check("dave's request to bob succeeds", daveToBob.status === 201);
+	const notifyPayload = await notified;
+	check("bob gets a live friend_request_received notification", notifyPayload.from.username === "dave", notifyPayload);
+
+	const aliceFriendsLive = await axios.get(`${BASE}/users/friends`, auth(aliceToken));
+	check("presence flips to online once connected", aliceFriendsLive.data[0].online === true, aliceFriendsLive.data);
+
+	// bob + carol accepted friendship, but carol never opens a socket (stays offline)
+	const bobToCarol = await axios.post(`${BASE}/users/friend-requests`, { recipient_id: carolId }, auth(bobToken));
+	check("bob requests carol", bobToCarol.status === 201);
+	const carolIncoming2 = await axios.get(`${BASE}/users/friend-requests`, auth(carolToken));
+	await axios.post(`${BASE}/users/friend-requests/${carolIncoming2.data.incoming[0].requestId}/accept`, {}, auth(carolToken));
+
+	// ---------- Challenge a friend ----------
+	console.log("\n== Challenge a friend ==");
+	const notAFriendErr = waitFor(alice, "room_error");
+	alice.emit("challenge_friend", { friendUserId: carolId, time: 5 });
+	check("challenging a non-friend is rejected", /only challenge friends/i.test((await notAFriendErr).message));
+
+	const offlineFriendErr = waitFor(bob, "room_error");
+	bob.emit("challenge_friend", { friendUserId: carolId, time: 5 });
+	check("challenging an offline friend is rejected", /offline/i.test((await offlineFriendErr).message));
+
+	const challengeReceived = waitFor(bob, "challenge_received");
+	alice.emit("challenge_friend", { friendUserId: bobId, time: 10 });
+	const challenge = await challengeReceived;
+	check("challenged friend receives the invite", challenge.from.username === "alice" && challenge.time === 10, challenge);
+
+	const aChallengeStart = waitFor(alice, "game_start");
+	const bChallengeStart = waitFor(bob, "game_start");
+	bob.emit("join_room", { room: challenge.room });
+	const [acs, bcs] = await Promise.all([aChallengeStart, bChallengeStart]);
+	check("accepting a challenge starts the game for both", acs.room === bcs.room && acs.time === 10, { acs, bcs });
+
+	const declineChallenge = waitFor(bob, "challenge_received");
+	alice.emit("challenge_friend", { friendUserId: bobId, time: 5 });
+	const challenge2 = await declineChallenge;
+	const challengerNotified = waitFor(alice, "challenge_declined");
+	bob.emit("challenge_declined", { room: challenge2.room });
+	await challengerNotified;
+	check("declining a challenge notifies the challenger", true);
 
 	// ---------- Matchmaking ----------
 	console.log("\n== Matchmaking ==");
@@ -189,9 +261,13 @@ async function main() {
 	check("winner sees outcome=win, color=white", hist.data[0].outcome === "win" && hist.data[0].color === "white", hist.data[0]);
 
 	const lb2 = await axios.get(`${BASE}/users/leaderboard`);
-	const ratings = lb2.data.map((u) => u.rating).sort((x, y) => y - x);
+	const byName = (data, name) => data.find((u) => u.username === name);
+	const ratings = [byName(lb2.data, "alice").rating, byName(lb2.data, "bob").rating].sort((x, y) => y - x);
 	check("leaderboard shows 416 / 384 after one game", ratings[0] === 416 && ratings[1] === 384, ratings);
-	check("number_of_matches incremented", lb2.data.every((u) => u.number_of_matches === 1));
+	check(
+		"number_of_matches incremented",
+		byName(lb2.data, "alice").number_of_matches === 1 && byName(lb2.data, "bob").number_of_matches === 1
+	);
 
 	// ---------- Friend room ----------
 	console.log("\n== Friend rooms ==");
@@ -229,7 +305,7 @@ async function main() {
 
 	// Fresh-ratings check: game 2 was 416 vs 384 — deltas must differ from ±16
 	const lb3 = await axios.get(`${BASE}/users/leaderboard`);
-	const total = lb3.data.reduce((s, u) => s + u.rating, 0);
+	const total = byName(lb3.data, "alice").rating + byName(lb3.data, "bob").rating;
 	check("ratings conserved after second game", total === 800, lb3.data.map((u) => [u.username, u.rating]));
 
 	// ---------- Draw flow ----------

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	AppBar,
 	Box,
@@ -22,6 +22,8 @@ import { motion } from "framer-motion";
 import Loginmodal from "../utilities/Loginmodal";
 import MenuBox from "../components/navbar/MenuBox";
 import AnimatedNumber from "../ui/AnimatedNumber";
+import SocketNotifications from "../realtime/SocketNotifications";
+import { socket } from "../socket";
 import { useAppDispatch, useAppSelector } from "../app-state/hooks";
 import { logout } from "../app-state/features/userPreferenceSlice";
 import { tokens } from "../theme";
@@ -44,6 +46,17 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
 	const navigate = useNavigate();
 	const dispatch = useAppDispatch();
 	const user = useAppSelector((state) => state.userPreference.user);
+
+	// Connect as soon as someone is logged in — not just when they visit
+	// "Play Online" — so friend-request/challenge notifications and presence
+	// work from anywhere in the app.
+	useEffect(() => {
+		if (user) {
+			socket.connect();
+		} else {
+			socket.disconnect();
+		}
+	}, [user]);
 
 	const handleLogout = () => {
 		dispatch(logout());
@@ -240,6 +253,7 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
 			<Modal open={loginOpen} onClose={() => setLoginOpen(false)}>
 				<Loginmodal onClose={() => setLoginOpen(false)} />
 			</Modal>
+			{user && <SocketNotifications />}
 		</Box>
 	);
 };
