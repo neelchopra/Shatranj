@@ -2,15 +2,11 @@ import React from 'react';
 import Box from '@mui/material/Box/Box';
 import theme from '../../theme';
 import styled from '@emotion/styled';
-import { IconButton, Typography, } from '@mui/material';
-
+import { Avatar, IconButton, Typography } from '@mui/material';
 import { grey } from '@mui/material/colors';
-import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
-import AddIcon from '@mui/icons-material/Add';
-import { friendstypes } from './Friends.Types';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 
 const MainBox=styled(Box)({
-    
     color:'white',
     backgroundColor:`${theme.palette.primary.main}`,
     display:'flex',
@@ -18,100 +14,65 @@ const MainBox=styled(Box)({
     width:'100%',
     height:'96px',
     borderRadius:'10px',
-    padding:'0 0% 0 1%',   
+    padding:'0 2% 0 1%',
     margin:'0 0 20px 0',
     [theme.breakpoints.up('laptop')]: {
-      height:'125px',      
+      height:'125px',
   },
-
-
-  
-})
-
-const ImageBox  =styled(Box)({
-  backgroundColor:'#D9D9D9',
-  height:'100%',
-  width:'100px',
-  borderRadius:'5px',
-  [theme.breakpoints.up('laptop')]: {
-    width:'125px'     
-},
 })
 
 const FriendText  =styled(Box)({
   backgroundColor:`${theme.palette.primary.main}`,
-  // backgroundColor:'red',
-  margin:' 0 0 0 50px',
+  margin:' 0 0 0 30px',
   height:'100%',
   display:'flex',
   justifyContent:'center',
   alignItems:'flex-start',
   flexDirection:'column',
-  width:'640px',
-  [theme.breakpoints.up('laptop')]: {
-    width:'750px'     
-  },
-
-
+  flexGrow:1,
 })
 const Nametext  =styled(Typography)({
   fontSize:'32px',
   fontWeight:700,
   [theme.breakpoints.up('laptop')]: {
-   fontSize:'40px'     
+   fontSize:'40px'
   },
-
 })
 
 const Desctext  =styled(Typography)({
   fontSize:'16px',
   fontWeight:700,
   [theme.breakpoints.up('laptop')]: {
-    fontSize:'20px'     
+    fontSize:'20px'
    },
-
 })
 
-const RemoveIcon =styled(PersonRemoveIcon)({
-  fontSize:'40px',  
-  position:'relative',
-  color:grey[100],
-  margin:'0 0 0 20px'
-  
-})
-const InviteIcon =styled(AddIcon)({
+const AddFriendIcon =styled(PersonAddIcon)({
   fontSize:'40px',
-  margin:'0 0 0 20px',
-  position:'relative',
   color:grey[100]
 })
-interface props{
-  imageurl:string,
-  nametext:string,
-  desctext:string
+
+export interface FriendsProps {
+  name: string,
+  desc: string,
+  onAdd?: () => void,
 }
 
-const Friends=(props:friendstypes)=>{
+const Friends=(props:FriendsProps)=>{
   return(
     <MainBox>
-            <ImageBox>
-            {props.img}
-            </ImageBox>
+            <Avatar sx={{height:'70px',width:'70px',fontSize:'32px'}}>
+              {props.name[0]?.toUpperCase()}
+            </Avatar>
               <FriendText>
                 <Nametext>{props.name}</Nametext>
                 <Desctext>{props.desc}</Desctext>
               </FriendText>
-             
-              <IconButton><RemoveIcon/></IconButton>
-              <IconButton><InviteIcon/></IconButton>
-              
-              
-              
+              {props.onAdd && (
+                <IconButton onClick={props.onAdd} title="Add friend"><AddFriendIcon/></IconButton>
+              )}
             </MainBox>
- 
   )
-
 }
 
-
-export default Friends  
+export default Friends

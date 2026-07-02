@@ -1,15 +1,10 @@
-import { createSlice,PayloadAction } from "@reduxjs/toolkit";
-import { Square } from 'react-chessboard/dist/chessboard/types';
-
-interface move {
-    from:Square,
-    to:Square,
-}
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface game {
     isLoading: boolean;
     gameState:{
         opponent:{name:string,rating:number,color:string},
+        room: string,
         position: string;
         pgn: string;
         isBlackTimerRunning: boolean,
@@ -18,7 +13,7 @@ interface game {
         result:string,
     }
 }
-const startPosition = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ';
+const startPosition = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const initialState:game = {
     isLoading: false,
     gameState:{
@@ -27,12 +22,13 @@ const initialState:game = {
             rating:400,
             color:'',
         },
+        room: '',
         position: startPosition,
         pgn: '',
         isBlackTimerRunning: false,
         isWhiteTimerRunning: true,
         isGameOver: false,
-        result: 'draw' //If winner exists then color else draw,  example 'white'
+        result: '' // 'white' | 'black' | 'draw' | 'abort' once the game ends
   }
 };
 
@@ -40,7 +36,14 @@ const gameSlice = createSlice({
     name: "game",
     initialState,
     reducers: {
-        setGameState(state, action: PayloadAction<any>){
+        // Reset everything and store who we are playing — dispatched when a game mounts.
+        initGame(state, action: PayloadAction<{opponent:{name:string,rating:number,color:string}, room?:string}>){
+            const fresh = JSON.parse(JSON.stringify(initialState)) as game;
+            fresh.gameState.opponent = action.payload.opponent;
+            fresh.gameState.room = action.payload.room || '';
+            return fresh;
+        },
+        setGameState(state, action: PayloadAction<{position:string,pgn:string,isGameOver:boolean,result:string}>){
             state.gameState.position=action.payload.position;
             state.gameState.pgn=action.payload.pgn;
             state.gameState.result=action.payload.result;
@@ -58,16 +61,18 @@ const gameSlice = createSlice({
         setWinner(state, action: PayloadAction<string>){
             state.gameState.result=action.payload
             state.gameState.isGameOver=true;
+            state.gameState.isBlackTimerRunning=false;
+            state.gameState.isWhiteTimerRunning=false;
         },
         closeModal(state){
             state.gameState.isGameOver=false;
         },
-        resetState(state){
-            state=initialState;
+        resetState(){
+            return initialState;
         }
     }
 })
 
-export const { setGameState,setWinner,closeModal } = gameSlice.actions;
+export const { initGame, setGameState, setWinner, closeModal, resetState } = gameSlice.actions;
 
 export default gameSlice.reducer;

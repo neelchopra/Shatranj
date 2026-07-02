@@ -1,6 +1,6 @@
-import React,{Component, useEffect}from 'react';
+import React from 'react';
 import { Box,Typography,Button,InputBase,InputAdornment,IconButton } from '@mui/material'
-import styled from '@emotion/styled';   
+import styled from '@emotion/styled';
 import theme from '../theme';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import Visibility from '@mui/icons-material/Visibility';
@@ -9,9 +9,7 @@ import Lock from '@mui/icons-material/Lock';
 import LoginIcon from '@mui/icons-material/Login';
 import MailIcon from '@mui/icons-material/MailOutline';
 import { useState } from 'react';
-import {useDispatch, useSelector } from 'react-redux';
-import {ThunkDispatch} from "@reduxjs/toolkit";
-
+import { useAppDispatch, useAppSelector } from '../app-state/hooks';
 
 import { loginUser,registerUser } from '../app-state/features/userPreferenceSlice';
 
@@ -108,10 +106,10 @@ const LoginButton=styled(Button)({
 
 
 
-const Loginmodal = () => {
+const Loginmodal = ({ onClose }: { onClose?: () => void }) => {
   const [showPassword, setShowPassword] = useState(false);
-  
-  
+
+
   const [login,setlogin]= useState(true)
   const [register,setregister]= useState(false)
   
@@ -134,6 +132,7 @@ const Loginmodal = () => {
     return /\S+@\S+\.\S+/.test(emailRegister);
   }
   const [mailError, setmailError] = useState(false);
+  const [formError, setformError] = useState("");
   //Login
   const[nameLogin,setnameLogin]=useState("")
   const[passwordLogin,setpasswordLogin]=useState("")
@@ -141,39 +140,39 @@ const Loginmodal = () => {
   const[passwordRegister,setpasswordRegister]=useState("")
   const[emailRegister,setemailRegister]=useState("")
 
-  const dispatch = useDispatch<ThunkDispatch<any, any, any>>();
-  const dispacher = useDispatch()
+  const dispatch = useAppDispatch();
+  const isloading = useAppSelector((state) => state.userPreference.isloading);
+  const serverError = useAppSelector((state) => state.userPreference.error);
 
-  const  handleregister = (n:string,p:string,m:string) => {  
-    
-    const registerData={
-      userDetails:{
-        username: n,
-        password: p,
-        email:m,
-      }
-      
-      }
-    dispatch(registerUser(registerData))
+  const handleregister = (n:string,p:string,m:string) => {
+    if (!n || !p || !m) {
+      setformError("All fields are required");
+      return;
+    }
+    if (!isValidEmail(m)) {
+      setformError("Please enter a valid email");
+      return;
+    }
+    setformError("");
+    dispatch(registerUser({ username: n, password: p, email: m }))
+      .unwrap()
+      .then(() => onClose?.())
+      .catch(() => {});
   };
-  const  handleLogin= (n:string,p:string) => {  
-    
-    const loginData={
-      userCredentials:{
-        username: n,
-        password: p,
-        
-      }
-      
-      }
-    dispatch(loginUser(loginData))
+  const handleLogin = (n:string,p:string) => {
+    if (!n || !p) {
+      setformError("Username and password are required");
+      return;
+    }
+    setformError("");
+    dispatch(loginUser({ username: n, password: p }))
+      .unwrap()
+      .then(() => onClose?.())
+      .catch(() => {});
   };
-  
-  
 
+  const displayError = formError || serverError;
 
- 
-  
   return (
     
     <ModalBox>
@@ -234,12 +233,17 @@ const Loginmodal = () => {
           </FieldBox>
         
             
+          <FieldBox>
+            <Box display={`${displayError ? '' : 'none'}`}>
+              <Error sx={{color:'#f44336'}}>{displayError}</Error>
+            </Box>
+          </FieldBox>
           <Login>
-            <LoginButton onClick={()=>{handleLogin(nameLogin,passwordLogin)}}>
-                Login
+            <LoginButton disabled={isloading} onClick={()=>{handleLogin(nameLogin,passwordLogin)}}>
+                {isloading ? 'Logging in...' : 'Login'}
               <LoginIcon/>
             </LoginButton>
-            
+
           </Login>
       </Box>
       <Box display={`${register? '' : 'none'}`}>
@@ -327,14 +331,19 @@ const Loginmodal = () => {
           </FieldBox>
         
             
+          <FieldBox>
+            <Box display={`${displayError ? '' : 'none'}`}>
+              <Error sx={{color:'#f44336'}}>{displayError}</Error>
+            </Box>
+          </FieldBox>
           <Login>
-            <LoginButton onClick={()=>{handleregister(nameRegister,passwordRegister,emailRegister)}}>
-                Register
+            <LoginButton disabled={isloading} onClick={()=>{handleregister(nameRegister,passwordRegister,emailRegister)}}>
+                {isloading ? 'Registering...' : 'Register'}
               <LoginIcon/>
             </LoginButton>
-            
+
           </Login>
-          
+
       </Box>
     </ModalBox>
     

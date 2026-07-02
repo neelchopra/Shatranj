@@ -3,12 +3,10 @@ import Typography from '@mui/material/Typography';
 import { Box } from '@mui/material';
 import styled from '@emotion/styled';
 import theme from '../theme';
-import IconButton from '@mui/material/IconButton/IconButton';
-
-import { useTheme } from '@emotion/react';
 import { NavLink } from 'react-router-dom';
 
-const dummyDesc = 'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Obcaecati itaque veritatis sed quibusdam a doloribus perferendis blanditiis, quidem in, quasi incidunt.'
+const onlineDesc = 'Play a rated game against a random opponent, or create a private room and invite a friend with a code. 5, 10 and 15 minute time controls.'
+const computerDesc = 'Practice against Stockfish at three difficulty levels. No account needed — jump straight into a game.'
 
 const FormatBox =styled(Box)({
     backgroundColor:`${theme.palette.primary.main}`,
@@ -56,7 +54,6 @@ const MainBox=styled(Box)({
 
 
 const Play = ()=>{
-    const theme= useTheme()
     return(
         <MainBox>
             <NavLink
@@ -65,7 +62,7 @@ const Play = ()=>{
             >
                 <FormatBox>
                     <FormatText>Online</FormatText>
-                    <FormatDesc>{dummyDesc}</FormatDesc>
+                    <FormatDesc>{onlineDesc}</FormatDesc>
                 </FormatBox>
             </NavLink>
             <NavLink
@@ -74,13 +71,9 @@ const Play = ()=>{
             >
                 <FormatBox>
                     <FormatText>vs Computer</FormatText>
-                    <FormatDesc>{dummyDesc}</FormatDesc>
+                    <FormatDesc>{computerDesc}</FormatDesc>
                 </FormatBox>
             </NavLink>
-            <FormatBox>
-                <FormatText>vs AI</FormatText>
-                <FormatDesc>{dummyDesc}</FormatDesc>
-            </FormatBox>
         </MainBox>
     )
 }

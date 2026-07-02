@@ -5,8 +5,6 @@ import { Route, Routes } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Home from './pages/Home';
 import Play from './pages/Play';
-import Variants from './pages/Variants';
-import Puzzles from './pages/Puzzles';
 import LeaderboardPage from './pages/LeaderboardPage';
 import FriendsPage from './pages/FriendsPage';
 import { styled, useTheme } from '@mui/material';
@@ -16,6 +14,7 @@ import PlayOnline from './pages/PlayOnline';
 import PlayComputer from './pages/PlayComputer';
 import StandardGame from './Games/StandardGame';
 import StandardBotGame from './Games/StandardBotGame';
+import RequireAuth from './utilities/RequireAuth';
 
 function App() {
   const theme = useTheme();
@@ -39,16 +38,14 @@ function App() {
             <Route path="/" element={<Home/>}/>
             <Route path="/play">
               <Route path="" element={<Play/>}/>
-              <Route path="/play/online" element={<PlayOnline/>}/>
+              <Route path="/play/online" element={<RequireAuth><PlayOnline/></RequireAuth>}/>
               <Route path="/play/computer" element={<PlayComputer/>}/>
-              <Route path="/play/online/game" element={<StandardGame/>}/>
+              <Route path="/play/online/game" element={<RequireAuth><StandardGame/></RequireAuth>}/>
               <Route path="/play/computer/game" element={<StandardBotGame/>}/>
             </Route>
-            <Route path="/variants" element={<Variants/>}/>
-            <Route path="/puzzles" element={<Puzzles/>}/>
             <Route path="/leaderboard" element={<LeaderboardPage/>}/>
-            <Route path="/friends" element={<FriendsPage/>}/>
-            <Route path="/my-account" element={<MyAccount/>}/>
+            <Route path="/friends" element={<RequireAuth><FriendsPage/></RequireAuth>}/>
+            <Route path="/my-account" element={<RequireAuth><MyAccount/></RequireAuth>}/>
             <Route path="*" element={<h1>404 NOT FOUND</h1>}/>
           </Routes>
         </PageBox>

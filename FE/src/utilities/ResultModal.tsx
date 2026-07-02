@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useAppDispatch, useAppSelector } from '../app-state/hooks'
 import { Box, Typography, useTheme, Button } from '@mui/material';
 import { closeModal } from '../app-state/features/gameSlice';
@@ -15,6 +15,11 @@ const ResultModal = () => {
     const handleClose = () => {
         dispatch(closeModal())
     }
+    const resultText =
+        result === 'white' ? 'White wins!' :
+        result === 'black' ? 'Black wins!' :
+        result === 'draw' ? 'Draw' :
+        result === 'abort' ? 'Game aborted' : result;
     return (
             <Box sx={{
                 height:'200px',
@@ -32,7 +37,7 @@ const ResultModal = () => {
                 display:`${open? '' : 'none'}`
             }}>
                 <Typography variant='h3'>
-                    {result}
+                    {resultText}
                 </Typography>
                 <Button onClick={handleClose} color='secondary' variant='contained'>X</Button>
             </Box>

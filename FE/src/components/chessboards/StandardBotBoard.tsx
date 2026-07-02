@@ -1,120 +1,114 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
-import { Square,Piece,BoardOrientation } from 'react-chessboard/dist/chessboard/types';
-import { useAppDispatch,useAppSelector } from '../../app-state/hooks';
+import { Square, Piece } from 'react-chessboard/dist/chessboard/types';
+import { useAppDispatch, useAppSelector } from '../../app-state/hooks';
 import { setGameState } from '../../app-state/features/gameSlice';
-import {Chess} from 'chess.js'
-import { useState } from 'react';
+import { Chess } from 'chess.js';
 import Engine from '../../Engine';
-
-const engine = new Engine();
-const chess = new Chess();
-let gameOver = false;
-let result = ''
-let sourceSquare = '';
-let targetSquare='';
-
+import { evaluateGame } from '../../utilities/chessResult';
 
 const boardWidth = window.innerHeight*80*75/10000;
 
-const StandardBotBoard = (props:any)=>{
+type Props = {
+    depth: number;
+    color: string; // the human always plays white against the bot
+}
+
+const StandardBotBoard = (props: Props)=>{
     const dispatch = useAppDispatch();
-    const position = useAppSelector((state)=>{
-        return state.game.gameState.position
-    })
+    const position = useAppSelector((state)=> state.game.gameState.position)
     const [optionSquares,setOptionSquares]=useState({})
 
-    function findBestMove() {
-        engine.evaluatePosition(chess.fen(), props.depth);
-    
+    const chessRef = useRef<Chess | null>(null);
+    if (!chessRef.current) chessRef.current = new Chess();
+    const engineRef = useRef<Engine | null>(null);
+    const sourceSquareRef = useRef<string>('');
+
+    const publishPosition = () => {
+        const chess = chessRef.current!;
+        const { isGameOver, result } = evaluateGame(chess);
+        dispatch(setGameState({
+            position: chess.fen(),
+            pgn: chess.pgn(),
+            isGameOver,
+            result,
+        }));
+    };
+
+    useEffect(() => {
+        const engine = new Engine();
+        engineRef.current = engine;
+        // Single persistent listener — the engine replies whenever we ask for a move.
         engine.onMessage(({ bestMove }) => {
-        if (bestMove) {
-            try{
-                chess.move(bestMove);
-                if(chess.isGameOver()){
-                    gameOver = true;
-                    if(chess.isThreefoldRepetition() || chess.isStalemate() || chess.isInsufficientMaterial()){
-                        result='draw';
-                    }
-                    if(chess.isCheckmate()){
-                        chess.turn()==='b'? result='white' : result='black';
-                    }
-                }
-                dispatch(setGameState({
-                    position:chess.fen(),
-                    pgn: chess.pgn(),
-                    isGameOver: gameOver,
-                    result: result
-                }))
-                return true;
-            }catch(e){ 
-                return false;
+            if (!bestMove) return;
+            const chess = chessRef.current!;
+            if (chess.isGameOver() || chess.turn() !== 'b') return;
+            try {
+                chess.move({
+                    from: bestMove.substring(0, 2),
+                    to: bestMove.substring(2, 4),
+                    promotion: bestMove.substring(4, 5) || 'q',
+                });
+                publishPosition();
+            } catch (e) {
+                console.error('Engine suggested an invalid move:', bestMove);
             }
-        }
         });
-    }
+        return () => {
+            engine.terminate();
+            engineRef.current = null;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const requestEngineMove = () => {
+        const chess = chessRef.current!;
+        if (chess.isGameOver()) return;
+        setTimeout(() => {
+            engineRef.current?.evaluatePosition(chess.fen(), props.depth);
+        }, 500);
+    };
+
+    const playerMove = (moveInput: {from:string,to:string,promotion?:string}) => {
+        const chess = chessRef.current!;
+        const move = chess.move(moveInput); // throws on illegal moves
+        publishPosition();
+        requestEngineMove();
+        return move;
+    };
+
+    const myTurn = () => chessRef.current!.turn() === 'w';
 
     const handleDrop = (source:Square,target:Square,piece:Piece)=>{
         setOptionSquares({})
+        if (!myTurn() || chessRef.current!.isGameOver()) return false;
         try{
-            chess.move({from:source,to: target});
-            if(chess.isGameOver()){
-                gameOver = true;
-                if(chess.isThreefoldRepetition() || chess.isStalemate() || chess.isInsufficientMaterial()){
-                    result='draw';
-                }
-                if(chess.isCheckmate()){
-                    chess.turn()==='b'? result='white' : result='black';
-                }
-            }
-            dispatch(setGameState({
-                position:chess.fen(),
-                pgn: chess.pgn(),
-                isGameOver: gameOver,
-                result: result
-            }))
-            setTimeout(() => {
-                findBestMove();
-            }, 1000);
+            playerMove({from:source,to:target,promotion:piece[1]?.toLowerCase() ?? 'q'});
             return true;
-        }catch(e){ 
+        }catch(e){
             return false;
         }
     }
+
     const handleClick = (square:Square)=>{
+        const chess = chessRef.current!;
+        if (!myTurn() || chess.isGameOver()) { setOptionSquares({}); return false; }
         try{
-            chess.move({from:sourceSquare,to: square});
+            playerMove({from:sourceSquareRef.current,to:square,promotion:'q'});
             setOptionSquares({})
-            if(chess.isGameOver()){
-                gameOver = true;
-                if(chess.isThreefoldRepetition() || chess.isStalemate() || chess.isInsufficientMaterial()){
-                    result='draw';
-                }
-                if(chess.isCheckmate()){
-                    chess.turn()==='b'? result='white' : result='black';
-                }
-            }
-            dispatch(setGameState({
-                position:chess.fen(),
-                pgn: chess.pgn(),
-                isGameOver: gameOver,
-                result: result
-            }))
-            setTimeout(() => {
-                findBestMove();
-            }, 1000);
             return true;
-        }catch(e){ 
+        }catch(e){
+            // Not a legal move from the stored source — treat as selecting a piece.
         }
-        sourceSquare=square;
+        sourceSquareRef.current = square;
         const moves = chess.moves({square:square,verbose:true});
         if (moves.length===0){setOptionSquares({}); return false}
         let newSquares = {};
-        moves.map((move)=>{
+        moves.forEach((move)=>{
             const key = move.to
-            chess.get(key) ? 
-            newSquares = {...newSquares, [key]:{background:"radial-gradient(closest-side, #97aef3 80%, transparent 40%)"}} : 
-            newSquares = {...newSquares, [key]:{background:"radial-gradient(closest-side, #97aef3 30%, transparent 40%)"}}
+            newSquares = {...newSquares, [key]:{background: chess.get(key)
+                ? "radial-gradient(closest-side, #97aef3 80%, transparent 40%)"
+                : "radial-gradient(closest-side, #97aef3 30%, transparent 40%)"}}
         })
         setOptionSquares(newSquares)
     }
@@ -129,9 +123,9 @@ const StandardBotBoard = (props:any)=>{
             customLightSquareStyle={{backgroundColor:'#E8EDF9'}}
             customSquareStyles={{...optionSquares}}
             animationDuration={100}
-            arePremovesAllowed={true}
+            arePremovesAllowed={false}
         />
     )
-} 
+}
 
 export default StandardBotBoard;

@@ -10,21 +10,17 @@ import ListItemText from '@mui/material/ListItemText';
 import Box  from '@mui/material/Box';
 import styled from '@emotion/styled';
 import {useTheme} from '@mui/material/styles';
-import { ListItemButton } from '@mui/material';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import MenuBox from './MenuBox';
 
 const navitems=[
   {label:'Play',route:'/play'},
-  {label:'Variants',route:'/variants'},
-  {label:'Puzzles',route:'/puzzles'},
   {label:'Leaderboard',route:'/leaderboard'},
   {label:'Friends',route:'/friends'},
 ]
 
 const Navbar = () => {
   const theme = useTheme();
-  const location = useLocation();
 
   const ListText=styled(Typography)({
     fontSize: '24px',

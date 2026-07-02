@@ -12,9 +12,15 @@ import ClickAwayListener from '@mui/material/ClickAwayListener';
 import Box from '@mui/material/Box/Box';
 import Avatar from '@mui/material/Avatar';
 import MenuItem from '@mui/material/MenuItem';
+import { useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../app-state/hooks';
+import { logout } from '../../app-state/features/userPreferenceSlice';
 
     const MenuBox  = () => {
         const theme = useTheme();
+        const user = useAppSelector((state) => state.userPreference.user);
+        const dispatch = useAppDispatch();
+        const navigate = useNavigate();
         const AccountText=styled(Typography)({
             fontWeight:700,
             fontSize:'24px',
@@ -78,6 +84,15 @@ import MenuItem from '@mui/material/MenuItem';
       
           prevOpen.current = open;
         }, [open]);
+
+        const handleLogout = (event: Event | React.SyntheticEvent) => {
+          handleClose(event);
+          dispatch(logout());
+          navigate('/');
+        };
+
+        if (!user) return null;
+
   return (
     <div>
         <Button
@@ -89,10 +104,10 @@ import MenuItem from '@mui/material/MenuItem';
           onClick={handleToggle}
         >
           <AccountBox>
-            <AccountAvatar/>           
+            <AccountAvatar>{user.username[0]?.toUpperCase()}</AccountAvatar>
               <AccountText>
-                Name
-              </AccountText> 
+                {user.username}
+              </AccountText>
           </AccountBox>
         </Button>
         <Popper
@@ -120,8 +135,8 @@ import MenuItem from '@mui/material/MenuItem';
                     onKeyDown={handleListKeyDown}
                   >
                    
-                    <MenuItem onClick={handleClose}><Link to='/my-account'>My account</Link></MenuItem>
-                    <MenuItem onClick={handleClose}>Logout</MenuItem>
+                    <MenuItem onClick={handleClose}><Link to='/my-account' style={{textDecoration:'none',color:'inherit'}}>My account</Link></MenuItem>
+                    <MenuItem onClick={handleLogout}>Logout</MenuItem>
                   </MenuList>
                 </ClickAwayListener>
               </Paper>

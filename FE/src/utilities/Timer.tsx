@@ -19,8 +19,9 @@ interface timerProps {
 const Timer = (props:timerProps) => {
     const dispatch = useAppDispatch()
     const theme=useTheme();
-    const {avatar,name,rating,expiryTimestamp,player}=props;
-    const timer = useTimer({ expiryTimestamp, autoStart:true, onExpire: () => {dispatch(setWinner(player))} });
+    const {name,rating,expiryTimestamp,player}=props;
+    // Flag fall: the player whose clock ran out LOSES — the other side wins.
+    const timer = useTimer({ expiryTimestamp, autoStart:true, onExpire: () => {dispatch(setWinner(player === 'white' ? 'black' : 'white'))} });
     const timerState = ternaryOperator(
         player==='white',
         useAppSelector((state)=>{return state.game.gameState.isWhiteTimerRunning}),
@@ -34,6 +35,7 @@ const Timer = (props:timerProps) => {
         else{
             timer.pause()
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[timerState])
 
     const TimerBox=styled(Box)({

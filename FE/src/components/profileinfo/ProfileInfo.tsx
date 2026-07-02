@@ -1,11 +1,15 @@
 import * as React from 'react';
-import { Box, IconButton } from '@mui/material';
+import { Box, Avatar } from '@mui/material';
 import styled from '@emotion/styled';
 import Typography from '@mui/material/Typography'
-import { profileinfodetail } from './ProfileInfoData';
-import editlogo from '../../image/Profileinfoediticon.svg';
 import theme from '../../theme';
-import { profileinfotypes } from './ProfileInfoTypes';
+
+interface profileinfotypes {
+    Username: string,
+    Desc: string,
+    Rating: number,
+    Games: number,
+}
 
 const ProfileInfoBox = styled(Box)({
     height:'220px',
@@ -62,18 +66,6 @@ const ProfileInfoDesc=styled(Typography)({
     
 })
 
-const ProfileinfoEdit=styled(IconButton)({
-    marginTop:'45px',
-    position:'absolute',
-    right:'20px',
-    maxHeight:'30px',
-    maxWidth:'30px',
-    [theme.breakpoints.up('laptop')]: {
-        marginTop:'56px',
-        right:'30px',
-    },
-})
-
 const RatingdisplayBox=styled(Box)({
     padding:'10px',
     backgroundColor:'#222226',
@@ -94,8 +86,8 @@ const RatingdisplayBox=styled(Box)({
 
 interface props {
     format:string,
-    rating:string
-    
+    rating:string | number
+
 }
 const Ratingdisplay=({format,rating}:props)=>{
     return(
@@ -115,32 +107,29 @@ const Ratingdisplay=({format,rating}:props)=>{
 
 const ProfileInfo = (props:profileinfotypes) => {
   return (
-    <ProfileInfoBox>        
+    <ProfileInfoBox>
         < Box  sx={{display:'flex'}}>
-                
-                <ProfileInfoImage>{props.UserImage}</ProfileInfoImage>
+
+                <ProfileInfoImage sx={{display:'flex',alignItems:'center',justifyContent:'center'}}>
+                    <Avatar sx={{height:'120px',width:'120px',fontSize:'60px'}}>
+                        {props.Username[0]?.toUpperCase()}
+                    </Avatar>
+                </ProfileInfoImage>
                 <Box>
                     <Box sx={{display:'flex',position:'relative'}}>
                         <ProfileInfoHeader>{props.Username}</ProfileInfoHeader>
                         <ProfileInfoDesc>{props.Desc}</ProfileInfoDesc>
-                        <ProfileinfoEdit >
-                            <img src={editlogo} height={'30px'} width={'30px'}/>
-                        </ProfileinfoEdit>  
                     </Box>
-                    <Box sx={{display:'flex'}}>
-                       
-                           
-                            <Ratingdisplay format='Bltiz' rating={props.Bltizrating}></Ratingdisplay>
-                            <Ratingdisplay format='Bullet' rating={props.Bulletrating}></Ratingdisplay>
-                            <Ratingdisplay format='Rapid' rating={props.Rapidrating}></Ratingdisplay>
+                    <Box sx={{display:'flex',gap:'20px'}}>
+                            <Ratingdisplay format='Rating' rating={props.Rating}></Ratingdisplay>
+                            <Ratingdisplay format='Games' rating={props.Games}></Ratingdisplay>
+                    </Box>
 
-                    </Box>
-                     
                 </Box>
-                
+
               </Box>
-         
-        
+
+
     </ProfileInfoBox>
 
   )

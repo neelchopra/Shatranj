@@ -1,5 +1,3 @@
-const stockfish = new Worker("/stockfish.js");
-
 type EngineMessage = {
   /** stockfish engine message in UCI format*/
   uciMessage: string;
@@ -23,7 +21,8 @@ export default class Engine {
   isReady: boolean;
 
   constructor() {
-    this.stockfish = stockfish;
+    // One worker per Engine instance so terminate() fully cleans up.
+    this.stockfish = new Worker("/stockfish.js");
     this.isReady = false;
     this.onMessage = (callback) => {
       this.stockfish.addEventListener("message", (e) => {
@@ -78,6 +77,7 @@ export default class Engine {
 
   terminate() {
     this.isReady = false;
-    this.stockfish.postMessage("quit"); // Run this before chessboard unmounting.
+    this.stockfish.postMessage("quit");
+    this.stockfish.terminate(); // kills the worker and all its listeners
   }
 }

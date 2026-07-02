@@ -1,144 +1,112 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Chessboard } from "react-chessboard";
 import { Square, Piece } from "react-chessboard/dist/chessboard/types";
 import { useAppDispatch, useAppSelector } from "../../app-state/hooks";
 import { setGameState } from "../../app-state/features/gameSlice";
 import { Chess } from "chess.js";
-import { useState } from "react";
 import { socket } from "../../socket";
-
-const chess = new Chess();
-let gameOver = false;
-let result = "";
-let sourceSquare = "";
+import { evaluateGame } from "../../utilities/chessResult";
 
 const boardWidth = (window.innerHeight * 80 * 75) / 10000;
 
-const StandardOnlineBoard = (props: any) => {
-	const sendMove = (move: any) => {
-		socket.emit("send_move", { move: move, room: props.room });
-		console.log("move sent");
-	};
+type Props = {
+	color: string; // 'white' | 'black' — this client's side, assigned by the server
+	room: string;
+};
+
+const StandardOnlineBoard = (props: Props) => {
 	const dispatch = useAppDispatch();
-	const position = useAppSelector((state) => {
-		return state.game.gameState.position;
-	});
+	const position = useAppSelector((state) => state.game.gameState.position);
 	const [optionSquares, setOptionSquares] = useState({});
 
+	const chessRef = useRef<Chess | null>(null);
+	if (!chessRef.current) chessRef.current = new Chess();
+	const sourceSquareRef = useRef<string>("");
+
+	const myTurn = () => chessRef.current!.turn() === props.color[0];
+
+	const publishPosition = () => {
+		const chess = chessRef.current!;
+		const { isGameOver, result } = evaluateGame(chess);
+		dispatch(
+			setGameState({
+				position: chess.fen(),
+				pgn: chess.pgn(),
+				isGameOver,
+				result,
+			})
+		);
+	};
+
 	useEffect(() => {
-		socket.on("recieve_move", (move) => {
-			console.log("received");
+		const onReceiveMove = (move: any) => {
 			try {
-				chess.move(move);
-				if (chess.isGameOver()) {
-					gameOver = true;
-					if (
-						chess.isThreefoldRepetition() ||
-						chess.isStalemate() ||
-						chess.isInsufficientMaterial()
-					) {
-						result = "draw";
-					}
-					if (chess.isCheckmate()) {
-						chess.turn() === "b" ? (result = "white") : (result = "black");
-					}
-				}
-				dispatch(
-					setGameState({
-						position: chess.fen(),
-						pgn: chess.pgn(),
-						isGameOver: gameOver,
-						result: result,
-					})
-				);
-			} catch (error) {}
-		});
-	}, [socket]);
+				chessRef.current!.move(move);
+				publishPosition();
+			} catch (error) {
+				console.error("Received an invalid move:", move);
+			}
+		};
+		socket.on("receive_move", onReceiveMove);
+		return () => {
+			socket.off("receive_move", onReceiveMove);
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	const playMove = (moveInput: { from: string; to: string; promotion?: string }) => {
+		const chess = chessRef.current!;
+		const move = chess.move(moveInput); // throws on illegal moves
+		publishPosition();
+		socket.emit("send_move", { move, room: props.room });
+		return move;
+	};
 
 	const handleDrop = (source: Square, target: Square, piece: Piece) => {
 		setOptionSquares({});
+		if (!myTurn() || chessRef.current!.isGameOver()) return false;
 		try {
-			const move = chess.move({ from: source, to: target });
-			if (chess.isGameOver()) {
-				gameOver = true;
-				if (
-					chess.isThreefoldRepetition() ||
-					chess.isStalemate() ||
-					chess.isInsufficientMaterial()
-				) {
-					result = "draw";
-				}
-				if (chess.isCheckmate()) {
-					chess.turn() === "b" ? (result = "white") : (result = "black");
-				}
-			}
-			dispatch(
-				setGameState({
-					position: chess.fen(),
-					pgn: chess.pgn(),
-					isGameOver: gameOver,
-					result: result,
-				})
-			);
-			console.log(move);
-			sendMove(move);
+			playMove({
+				from: source,
+				to: target,
+				promotion: piece[1]?.toLowerCase() ?? "q",
+			});
 			return true;
 		} catch (e) {
 			return false;
 		}
 	};
+
 	const handleClick = (square: Square) => {
-		try {
-			const move = chess.move({ from: sourceSquare, to: square });
+		const chess = chessRef.current!;
+		if (!myTurn() || chess.isGameOver()) {
 			setOptionSquares({});
-			if (chess.isGameOver()) {
-				gameOver = true;
-				if (
-					chess.isThreefoldRepetition() ||
-					chess.isStalemate() ||
-					chess.isInsufficientMaterial()
-				) {
-					result = "draw";
-				}
-				if (chess.isCheckmate()) {
-					chess.turn() === "b" ? (result = "white") : (result = "black");
-				}
-			}
-			dispatch(
-				setGameState({
-					position: chess.fen(),
-					pgn: chess.pgn(),
-					isGameOver: gameOver,
-					result: result,
-				})
-			);
-			sendMove(move);
+			return false;
+		}
+		try {
+			playMove({ from: sourceSquareRef.current, to: square, promotion: "q" });
+			setOptionSquares({});
 			return true;
-		} catch (e) {}
-		sourceSquare = square;
+		} catch (e) {
+			// Not a legal move from the stored source — treat as selecting a piece.
+		}
+		sourceSquareRef.current = square;
 		const moves = chess.moves({ square: square, verbose: true });
 		if (moves.length === 0) {
 			setOptionSquares({});
 			return false;
 		}
 		let newSquares = {};
-		moves.map((move) => {
+		moves.forEach((move) => {
 			const key = move.to;
-			chess.get(key)
-				? (newSquares = {
-						...newSquares,
-						[key]: {
-							background:
-								"radial-gradient(closest-side, #97aef3 80%, transparent 40%)",
-						},
-				  })
-				: (newSquares = {
-						...newSquares,
-						[key]: {
-							background:
-								"radial-gradient(closest-side, #97aef3 30%, transparent 40%)",
-						},
-				  });
+			newSquares = {
+				...newSquares,
+				[key]: {
+					background: chess.get(key)
+						? "radial-gradient(closest-side, #97aef3 80%, transparent 40%)"
+						: "radial-gradient(closest-side, #97aef3 30%, transparent 40%)",
+				},
+			};
 		});
 		setOptionSquares(newSquares);
 	};
@@ -153,8 +121,8 @@ const StandardOnlineBoard = (props: any) => {
 			customLightSquareStyle={{ backgroundColor: "#E8EDF9" }}
 			customSquareStyles={{ ...optionSquares }}
 			animationDuration={100}
-			arePremovesAllowed={true}
-			boardOrientation={props.color}
+			arePremovesAllowed={false}
+			boardOrientation={props.color as "white" | "black"}
 		/>
 	);
 };
