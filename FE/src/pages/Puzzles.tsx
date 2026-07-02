@@ -9,10 +9,12 @@ import GlassCard from "../ui/GlassCard";
 import AnimatedNumber from "../ui/AnimatedNumber";
 import useBoardWidth from "../hooks/useBoardWidth";
 import PuzzleBoard, { PuzzleData, PuzzleOutcome } from "../components/chessboards/PuzzleBoard";
+import ReviewBoard from "../components/chessboards/ReviewBoard";
 import { fadeUp, staggerContainer } from "../ui/motion";
 import { tokens } from "../theme";
 import { useAppDispatch } from "../app-state/hooks";
 import { updatePuzzleStats } from "../app-state/features/userPreferenceSlice";
+import { pgnToPlies } from "../utilities/pgnPlies";
 
 type AttemptResult = {
 	puzzle_rating: number;
@@ -94,9 +96,18 @@ const Puzzles = () => {
 								border: "1px solid rgba(255,255,255,0.08)",
 								boxShadow: tokens.glowSoft,
 								display: "inline-block",
+								padding: outcome ? "12px" : 0,
 							}}
 						>
-							<PuzzleBoard key={puzzle._id} puzzle={puzzle} boardWidth={boardWidth} onResult={handleResult} />
+							{outcome ? (
+								<ReviewBoard
+									plies={pgnToPlies(outcome.solutionPgn)}
+									boardWidth={boardWidth}
+									orientation={puzzle.fen.split(" ")[1] === "w" ? "black" : "white"}
+								/>
+							) : (
+								<PuzzleBoard key={puzzle._id} puzzle={puzzle} boardWidth={boardWidth} onResult={handleResult} />
+							)}
 						</Box>
 					)}
 				</Box>

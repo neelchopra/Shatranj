@@ -13,11 +13,10 @@ import GlassCard from "../ui/GlassCard";
 import useBoardWidth from "../hooks/useBoardWidth";
 import { tokens } from "../theme";
 import { fadeUp } from "../ui/motion";
+import { pgnToPlies } from "../utilities/pgnPlies";
 
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const ANALYSIS_DEPTH = 14;
-
-type Ply = { san: string; before: string; after: string };
 
 const uciToSan = (fen: string, uci: string) => {
 	try {
@@ -37,16 +36,7 @@ const Analysis = () => {
 	const location = useLocation();
 	const pgn = (location.state as { pgn?: string } | null)?.pgn;
 
-	const plies = useMemo<Ply[]>(() => {
-		if (!pgn) return [];
-		try {
-			const chess = new Chess();
-			chess.loadPgn(pgn);
-			return chess.history({ verbose: true }).map((m) => ({ san: m.san, before: m.before, after: m.after }));
-		} catch {
-			return [];
-		}
-	}, [pgn]);
+	const plies = useMemo(() => pgnToPlies(pgn || ""), [pgn]);
 
 	const [index, setIndex] = useState(0); // 0 = starting position, N = after ply N
 	const [evalCp, setEvalCp] = useState<number | null>(null);
@@ -110,8 +100,8 @@ const Analysis = () => {
 			<Typography variant="h2" sx={{ marginBottom: "24px" }}>
 				Game analysis
 			</Typography>
-			<Box sx={{ display: "flex", gap: 3, flexWrap: "wrap", alignItems: "flex-start" }}>
-				<Box sx={{ display: "flex", gap: 2 }}>
+			<Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 340px" }, gap: 3, alignItems: "start" }}>
+				<Box sx={{ display: "flex", gap: 2, minWidth: 0 }}>
 					<Box
 						sx={{
 							width: 28,
@@ -129,7 +119,7 @@ const Analysis = () => {
 							style={{ background: "#F1F5F9", width: "100%" }}
 						/>
 					</Box>
-					<Box ref={boardContainerRef} sx={{ flexGrow: 1 }}>
+					<Box ref={boardContainerRef} sx={{ flexGrow: 1, minWidth: 0, display: "flex", justifyContent: "center" }}>
 						{boardWidth > 0 && (
 							<Box
 								sx={{
@@ -151,7 +141,7 @@ const Analysis = () => {
 					</Box>
 				</Box>
 
-				<GlassCard sx={{ padding: "24px", minWidth: 260, flexGrow: 1, maxWidth: 340 }}>
+				<GlassCard sx={{ padding: "24px" }}>
 					<Typography sx={{ color: "text.secondary", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>
 						Evaluation
 					</Typography>
