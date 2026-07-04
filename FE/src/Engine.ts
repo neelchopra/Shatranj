@@ -71,6 +71,15 @@ export default class Engine {
     this.stockfish.postMessage(`go depth ${depth}`);
   }
 
+  setOption(name: string, value: string | number) {
+    this.stockfish.postMessage(`setoption name ${name} value ${value}`);
+  }
+
+  findMove(fen: string, limits: { depth: number; movetimeMs: number }) {
+    this.stockfish.postMessage(`position fen ${fen}`);
+    this.stockfish.postMessage(`go depth ${limits.depth} movetime ${limits.movetimeMs}`);
+  }
+
   stop() {
     this.stockfish.postMessage("stop"); // Run when searching takes too long time and stockfish will return you the bestmove of the deep it has reached
   }
