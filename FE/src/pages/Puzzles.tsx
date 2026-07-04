@@ -109,7 +109,7 @@ const Puzzles = () => {
 				</motion.div>
 			)}
 
-			<Box sx={{ display: "flex", gap: 3, flexWrap: "wrap", alignItems: "flex-start" }}>
+			<Box sx={{ display: "flex", gap: 3, flexWrap: "wrap", alignItems: "flex-start", justifyContent: "center" }}>
 				<Box ref={boardContainerRef} sx={{ flexGrow: 1, minWidth: 280, display: "flex", justifyContent: "center" }}>
 					{puzzle && boardWidth > 0 && (
 						<Box
