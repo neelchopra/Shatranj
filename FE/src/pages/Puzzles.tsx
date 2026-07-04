@@ -9,7 +9,7 @@ import GlassCard from "../ui/GlassCard";
 import AnimatedNumber from "../ui/AnimatedNumber";
 import useBoardWidth from "../hooks/useBoardWidth";
 import PuzzleBoard, { PuzzleData, PuzzleOutcome } from "../components/chessboards/PuzzleBoard";
-import ReviewBoard from "../components/chessboards/ReviewBoard";
+import ReviewBoard, { ReviewControls } from "../components/chessboards/ReviewBoard";
 import { fadeUp, staggerContainer } from "../ui/motion";
 import { tokens } from "../theme";
 import { useAppDispatch, useAppSelector } from "../app-state/hooks";
@@ -75,6 +75,7 @@ const Puzzles = () => {
 	};
 
 	return (
+		<>
 		<motion.div variants={staggerContainer} initial="initial" animate="animate">
 			<motion.div variants={fadeUp}>
 				<Typography variant="h2" sx={{ marginBottom: "24px" }}>
@@ -111,9 +112,16 @@ const Puzzles = () => {
 							) : (
 								<>
 									<PuzzleBoard key={puzzle._id} puzzle={puzzle} boardWidth={boardWidth} onResult={handleResult} />
-									{/* Reserves the same height ReviewBoard's Back/Forward controls take up,
-									    so solving a puzzle doesn't shift the layout when they appear. */}
-									<Box sx={{ height: "76px" }} />
+									<ReviewControls
+										index={0}
+										total={0}
+										label=""
+										onFirst={() => {}}
+										onPrev={() => {}}
+										onNext={() => {}}
+										onLast={() => {}}
+										placeholder
+									/>
 								</>
 							)}
 						</Box>
@@ -197,18 +205,55 @@ const Puzzles = () => {
 						</Box>
 					)}
 
-					{outcome && (
-						<Button variant="outlined" fullWidth onClick={reviewOnAnalysisBoard} sx={{ marginBottom: "12px" }}>
-							Play it out on the analysis board
+					{/* On mobile these live in the fixed bottom bar instead, so
+					    reaching "Next puzzle" never requires scrolling past
+					    the stats/solution content above. */}
+					<Box sx={{ display: { xs: "none", lg: "block" } }}>
+						{outcome && (
+							<Button variant="outlined" fullWidth onClick={reviewOnAnalysisBoard} sx={{ marginBottom: "12px" }}>
+								Play it out on the analysis board
+							</Button>
+						)}
+						<Button variant="contained" fullWidth onClick={loadPuzzle} disabled={!outcome}>
+							Next puzzle
 						</Button>
-					)}
-
-					<Button variant="contained" fullWidth onClick={loadPuzzle} disabled={!outcome}>
-						Next puzzle
-					</Button>
+					</Box>
 				</GlassCard>
 			</Box>
+
+			{/* Reserves space so the fixed mobile action bar below never
+			    overlaps the last bit of sidebar content. */}
+			{puzzle && <Box sx={{ height: { xs: "84px", lg: 0 } }} />}
 		</motion.div>
+
+		{puzzle && (
+			<Box
+				sx={{
+					display: { xs: "flex", lg: "none" },
+					position: "fixed",
+					left: 0,
+					right: 0,
+					bottom: 0,
+					zIndex: (t) => t.zIndex.appBar,
+					gap: "10px",
+					padding: "12px 16px calc(12px + env(safe-area-inset-bottom))",
+					background: tokens.glassStrong.background,
+					backdropFilter: tokens.glassStrong.blur,
+					WebkitBackdropFilter: tokens.glassStrong.blur,
+					borderTop: tokens.glassStrong.border,
+				}}
+			>
+				{outcome && (
+					<Button variant="outlined" fullWidth onClick={reviewOnAnalysisBoard}>
+						Analyze
+					</Button>
+				)}
+				<Button variant="contained" fullWidth onClick={loadPuzzle} disabled={!outcome}>
+					Next puzzle
+				</Button>
+			</Box>
+		)}
+		</>
 	);
 };
 

@@ -25,12 +25,21 @@ const useBoardWidth = (ref: RefObject<HTMLElement>): number => {
 		};
 
 		measure();
+		let lastWidth = window.innerWidth;
 
-		// Later resizes (rotation, real address-bar show/hide) are debounced so
-		// a burst of events settles into a single re-measurement instead of
-		// several visible jumps.
+		// Later resizes are debounced so a burst of events settles into a
+		// single re-measurement instead of several visible jumps. Mobile
+		// browsers also fire resize purely from the address bar collapsing or
+		// expanding as the page loads/scrolls — that changes innerHeight but
+		// not innerWidth. Reacting to it re-grows or re-shrinks the board a
+		// moment after it first renders, which reads as the board "zooming
+		// in" even though nothing was pinched or tapped. Only real width
+		// changes (orientation, an actual window resize) should trigger a
+		// re-measure.
 		let debounceTimer: ReturnType<typeof setTimeout>;
 		const onResize = () => {
+			if (window.innerWidth === lastWidth) return;
+			lastWidth = window.innerWidth;
 			clearTimeout(debounceTimer);
 			debounceTimer = setTimeout(measure, 120);
 		};
