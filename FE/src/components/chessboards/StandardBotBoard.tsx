@@ -10,24 +10,35 @@ import Engine from '../../Engine';
 import { evaluateGame } from '../../utilities/chessResult';
 import { playIllegalSound, soundForMove } from '../../utilities/sounds';
 import { limitsForRating } from '../../utilities/botStrength';
+import { isPromotionMove, PromotionPiece } from '../../utilities/promotion';
+import PromotionPicker from './PromotionPicker';
 
 type Props = {
     rating: number;
     color: string; // the human always plays white against the bot
     boardWidth: number;
+    /** When set, shows this position read-only instead of the live game (viewing a past move from the move list). */
+    reviewPosition?: string;
 }
+
+type Premove = { from: string; to: string; promotion?: string };
 
 const StandardBotBoard = (props: Props)=>{
     const { tokens } = useTheme();
     const dispatch = useAppDispatch();
     const position = useAppSelector((state)=> state.game.gameState.position)
     const [optionSquares,setOptionSquares]=useState({})
+    const [pendingPromotion, setPendingPromotion] = useState<{ from: string; to: string } | null>(null);
+    const [premove, setPremove] = useState<Premove | null>(null);
+    const isReviewing = !!props.reviewPosition;
 
     const chessRef = useRef<Chess | null>(null);
     if (!chessRef.current) chessRef.current = new Chess();
     const engineRef = useRef<Engine | null>(null);
     const sourceSquareRef = useRef<string>('');
     const shakeControls = useAnimationControls();
+    const premoveRef = useRef(premove);
+    premoveRef.current = premove;
 
     const shakeBoard = () => {
         playIllegalSound();
@@ -43,6 +54,30 @@ const StandardBotBoard = (props: Props)=>{
             isGameOver,
             result,
         }));
+    };
+
+    const playerMove = (moveInput: {from:string,to:string,promotion?:string}) => {
+        const chess = chessRef.current!;
+        const move = chess.move(moveInput); // throws on illegal moves
+        soundForMove(chess.inCheck(), move);
+        publishPosition();
+        requestEngineMove();
+        return move;
+    };
+
+    // A queued premove is only ever checked for legality once it's actually
+    // our turn — anything staged earlier can't be validated against a
+    // position that hasn't happened yet. If the engine's reply invalidated
+    // it, it's just silently dropped rather than played wrong.
+    const tryPremove = () => {
+        const pm = premoveRef.current;
+        if (!pm) return;
+        setPremove(null);
+        try {
+            playerMove(pm);
+        } catch {
+            // No longer legal — discard quietly.
+        }
     };
 
     useEffect(() => {
@@ -62,6 +97,7 @@ const StandardBotBoard = (props: Props)=>{
                 });
                 soundForMove(chess.inCheck(), engineMove);
                 publishPosition();
+                tryPremove();
             } catch (e) {
                 console.error('Engine suggested an invalid move:', bestMove);
             }
@@ -82,21 +118,15 @@ const StandardBotBoard = (props: Props)=>{
         }, 500);
     };
 
-    const playerMove = (moveInput: {from:string,to:string,promotion?:string}) => {
-        const chess = chessRef.current!;
-        const move = chess.move(moveInput); // throws on illegal moves
-        soundForMove(chess.inCheck(), move);
-        publishPosition();
-        requestEngineMove();
-        return move;
-    };
-
     const myTurn = () => chessRef.current!.turn() === 'w';
 
     const handleDrop = (source:Square,target:Square,piece:Piece)=>{
         setOptionSquares({})
-        if (!myTurn() || chessRef.current!.isGameOver()) {
-            shakeBoard();
+        if (isReviewing) return false;
+        if (chessRef.current!.isGameOver()) { shakeBoard(); return false; }
+        if (!myTurn()) {
+            if (piece[0] !== 'w') { shakeBoard(); return false; }
+            setPremove({ from: source, to: target, promotion: piece[1]?.toLowerCase() });
             return false;
         }
         try{
@@ -110,13 +140,47 @@ const StandardBotBoard = (props: Props)=>{
 
     const handleClick = (square:Square)=>{
         const chess = chessRef.current!;
-        if (!myTurn() || chess.isGameOver()) { setOptionSquares({}); return false; }
-        try{
-            playerMove({from:sourceSquareRef.current,to:square,promotion:'q'});
-            setOptionSquares({})
-            return true;
-        }catch(e){
-            // Not a legal move from the stored source — treat as selecting a piece.
+        if (isReviewing || chess.isGameOver()) { setOptionSquares({}); return false; }
+
+        if (!myTurn()) {
+            if (premove && (square === premove.from || square === premove.to)) {
+                setPremove(null);
+                setOptionSquares({});
+                sourceSquareRef.current = '';
+                return false;
+            }
+            const from = sourceSquareRef.current;
+            if (from) {
+                sourceSquareRef.current = '';
+                setOptionSquares({});
+                if (from !== square) setPremove({ from, to: square, promotion: 'q' });
+                return false;
+            }
+            const piece = chess.get(square as Square);
+            if (piece?.color === 'w') {
+                sourceSquareRef.current = square;
+                setOptionSquares({ [square]: { background: `rgba(${tokens.accentRgb},0.3)` } });
+            }
+            return false;
+        }
+
+        const from = sourceSquareRef.current;
+        if (from) {
+            const legal = chess.moves({ square: from as Square, verbose: true });
+            if (legal.some((m) => m.to === square) && isPromotionMove(chess, from, square)) {
+                sourceSquareRef.current = '';
+                setOptionSquares({});
+                setPendingPromotion({ from, to: square });
+                return false;
+            }
+            try{
+                playerMove({from,to:square,promotion:'q'});
+                sourceSquareRef.current = '';
+                setOptionSquares({})
+                return true;
+            }catch(e){
+                // Not a legal move from the stored source — treat as selecting a piece.
+            }
         }
         sourceSquareRef.current = square;
         const moves = chess.moves({square:square,verbose:true});
@@ -127,20 +191,45 @@ const StandardBotBoard = (props: Props)=>{
             newSquares = {...newSquares, [key]:{background: chess.get(key) ? tokens.board.hintCapture : tokens.board.hintMove}}
         })
         setOptionSquares(newSquares)
+        return false;
     }
+
+    const confirmPromotion = (piece: PromotionPiece) => {
+        if (!pendingPromotion) return;
+        try {
+            playerMove({ from: pendingPromotion.from, to: pendingPromotion.to, promotion: piece });
+        } catch (e) {
+            shakeBoard();
+        }
+        setPendingPromotion(null);
+    };
+
+    const premoveSquares = premove
+        ? {
+            [premove.from]: { background: `rgba(${tokens.accentRgb},0.35)` },
+            [premove.to]: { background: `rgba(${tokens.accentRgb},0.35)` },
+        }
+        : {};
 
     return(
         <motion.div animate={shakeControls}>
             <Chessboard
-                position={position}
+                position={props.reviewPosition ?? position}
                 onPieceDrop={handleDrop}
                 boardWidth={props.boardWidth}
+                arePiecesDraggable={!isReviewing}
                 onSquareClick={handleClick}
                 customDarkSquareStyle={{backgroundColor:tokens.board.dark}}
                 customLightSquareStyle={{backgroundColor:tokens.board.light}}
-                customSquareStyles={{...optionSquares}}
+                customSquareStyles={{...optionSquares, ...premoveSquares}}
                 animationDuration={100}
-                arePremovesAllowed={false}
+                arePremovesAllowed={true}
+            />
+            <PromotionPicker
+                open={!!pendingPromotion}
+                color="w"
+                onSelect={confirmPromotion}
+                onCancel={() => setPendingPromotion(null)}
             />
         </motion.div>
     )

@@ -34,7 +34,7 @@ const RequireAuth = ({ children }: { children: JSX.Element }) => {
 							Login required
 						</Typography>
 						<Typography sx={{ color: "text.secondary", lineHeight: 1.7 }}>
-							You need an account to use this page — online games are rated and
+							You need an account to use this page. Online games are rated and
 							saved to your profile. Use the Login button in the top-right corner
 							to sign in or create an account. No account is needed to play
 							against the computer.

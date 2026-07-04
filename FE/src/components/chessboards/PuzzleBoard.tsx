@@ -6,6 +6,8 @@ import { useTheme } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { Chess } from "chess.js";
 import { playCaptureSound, playGameEndSound, playIllegalSound, playMoveSound } from "../../utilities/sounds";
+import { isPromotionMove, PromotionPiece } from "../../utilities/promotion";
+import PromotionPicker from "./PromotionPicker";
 
 export type PuzzleData = {
 	_id: string;
@@ -84,6 +86,7 @@ const PuzzleBoard = ({ puzzle, boardWidth, onResult, onLineComplete }: Props) =>
 	const [optionSquares, setOptionSquares] = useState({});
 	const [wrongSquares, setWrongSquares] = useState<{ [square: string]: React.CSSProperties }>({});
 	const [status, setStatus] = useState<"setup" | "playing" | "done">("setup");
+	const [pendingPromotion, setPendingPromotion] = useState<{ from: string; to: string } | null>(null);
 	const sourceSquareRef = useRef<string>("");
 
 	const shakeBoard = () => {
@@ -245,6 +248,10 @@ const PuzzleBoard = ({ puzzle, boardWidth, onResult, onLineComplete }: Props) =>
 			if (legalTargets.includes(square)) {
 				sourceSquareRef.current = "";
 				setOptionSquares({});
+				if (isPromotionMove(chess, selected, square)) {
+					setPendingPromotion({ from: selected, to: square });
+					return false;
+				}
 				return attemptMove(selected, square);
 			}
 			// Not a legal destination for the selected piece — this isn't a
@@ -254,6 +261,12 @@ const PuzzleBoard = ({ puzzle, boardWidth, onResult, onLineComplete }: Props) =>
 
 		selectSquare(chess, square);
 		return false;
+	};
+
+	const confirmPromotion = (piece: PromotionPiece) => {
+		if (!pendingPromotion) return;
+		attemptMove(pendingPromotion.from, pendingPromotion.to, piece);
+		setPendingPromotion(null);
 	};
 
 	return (
@@ -269,6 +282,12 @@ const PuzzleBoard = ({ puzzle, boardWidth, onResult, onLineComplete }: Props) =>
 				customSquareStyles={{ ...optionSquares, ...wrongSquares }}
 				animationDuration={150}
 				arePremovesAllowed={false}
+			/>
+			<PromotionPicker
+				open={!!pendingPromotion}
+				color={orientation[0] as "w" | "b"}
+				onSelect={confirmPromotion}
+				onCancel={() => setPendingPromotion(null)}
 			/>
 		</motion.div>
 	);

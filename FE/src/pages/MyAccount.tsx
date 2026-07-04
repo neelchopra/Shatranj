@@ -59,7 +59,7 @@ const MyAccount = () => {
         {games.length === 0 && (
           <motion.div variants={fadeUp}>
             <Typography sx={{ color: 'text.secondary' }}>
-              No games yet — play an online game and it will show up here.
+              No games yet. Play an online game and it will show up here.
             </Typography>
           </motion.div>
         )}

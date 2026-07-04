@@ -18,7 +18,7 @@ const modes = [
     },
     {
         title: 'vs Computer',
-        desc: 'Practice against Stockfish at three difficulty levels. No account needed — jump straight into a game.',
+        desc: 'Practice against Stockfish at three difficulty levels. No account needed, jump straight into a game.',
         to: '/play/computer',
         glyph: '♞',
     },

@@ -48,6 +48,8 @@ const StandardGame = () => {
 
 	const boardContainerRef = useRef<HTMLDivElement>(null);
 	const boardWidth = useBoardWidth(boardContainerRef);
+	const [viewIndex, setViewIndex] = useState<number | null>(null);
+	const plies = pgnToPlies(pgn);
 
 	// Stable clock expiry timestamps — created once per game mount.
 	const [expiry] = useState(() => {
@@ -122,6 +124,13 @@ const StandardGame = () => {
 		socket.emit("draw_response", { room: state.room, accepted, pgn });
 	};
 
+	const reviewPosition =
+		viewIndex === null
+			? undefined
+			: viewIndex === 0
+				? plies[0]?.before
+				: plies[viewIndex - 1]?.after;
+
 	return (
 		<Box
 			sx={{
@@ -153,12 +162,17 @@ const StandardGame = () => {
 						>
 							{gameEnded ? (
 								<ReviewBoard
-									plies={pgnToPlies(pgn)}
+									plies={plies}
 									boardWidth={boardWidth}
 									orientation={state.color as "white" | "black"}
 								/>
 							) : (
-								<StandardOnlineBoard color={state.color} room={state.room} boardWidth={boardWidth} />
+								<StandardOnlineBoard
+									color={state.color}
+									room={state.room}
+									boardWidth={boardWidth}
+									reviewPosition={reviewPosition}
+								/>
 							)}
 						</Box>
 					)}
@@ -172,7 +186,12 @@ const StandardGame = () => {
 					player={state.color}
 				/>
 			</Box>
-			<GameControls room={state.room} isOnline={true} />
+			<GameControls
+				room={state.room}
+				isOnline={true}
+				viewIndex={viewIndex}
+				onSelectMove={(index) => setViewIndex(index === plies.length ? null : index)}
+			/>
 
 			<ResultModal ratingUpdate={ratingUpdate} myColor={state.color} room={state.room} />
 

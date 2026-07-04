@@ -199,8 +199,8 @@ const Puzzles = () => {
 									{outcome.solved
 										? "Solved!"
 										: foundAfterFail
-											? "You found it — already counted as a miss"
-											: "Not quite — keep trying, or view the solution"}
+											? "You found it, but it's already counted as a miss"
+											: "Not quite. Keep trying, or view the solution"}
 								</Typography>
 							</Box>
 						</motion.div>
@@ -235,8 +235,8 @@ const Puzzles = () => {
 								You played{" "}
 								<Box component="span" sx={{ fontFamily: tokens.fontMono, fontWeight: 700, color: "error.main" }}>
 									{outcome.mistake.playedSan || "an illegal move"}
-								</Box>{" "}
-								— the winning move was{" "}
+								</Box>
+								. The winning move was{" "}
 								<Box component="span" sx={{ fontFamily: tokens.fontMono, fontWeight: 700, color: "success.main" }}>
 									{outcome.mistake.expectedSan}
 								</Box>

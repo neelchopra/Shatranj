@@ -186,7 +186,7 @@ const PlayOnline = () => {
 					{mode === "hosting" ? (
 						<Box>
 							<Typography sx={{ color: "text.secondary", marginBottom: "16px" }}>
-								Share this code with your friend — the game starts when they join:
+								Share this code with your friend. The game starts when they join:
 							</Typography>
 							<Box sx={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
 								<Box

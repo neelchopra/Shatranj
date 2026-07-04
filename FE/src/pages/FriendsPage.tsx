@@ -97,7 +97,7 @@ const FriendsPage = ()=>{
     const challenge = (friendId: string) => {
         socket.connect();
         socket.emit('challenge_friend', { friendUserId: friendId, time: 10 });
-        setNotice('Challenge sent — waiting for them to accept…');
+        setNotice('Challenge sent. Waiting for them to accept…');
         navigate('/play/online');
     };
 
@@ -198,7 +198,7 @@ const FriendsPage = ()=>{
                 {friends.length === 0 && (
                     <motion.div variants={fadeUp}>
                         <Typography sx={{ color: 'text.secondary', padding: '12px 0' }}>
-                            No friends yet — search for players by username and send a request.
+                            No friends yet. Search for players by username and send a request.
                         </Typography>
                     </motion.div>
                 )}

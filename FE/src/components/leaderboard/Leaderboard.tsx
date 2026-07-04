@@ -146,7 +146,7 @@ const Leaderboard = ({ players, variant = "games" }: Props) => {
       </TableContainer>
       {players.length === 0 && (
         <Typography sx={{ color: "text.secondary", padding: "24px 0 8px 0" }}>
-          No players yet — be the first on the board.
+          No players yet. Be the first on the board.
         </Typography>
       )}
       {players.length > 5 && (

@@ -6,22 +6,38 @@ import { motion } from 'framer-motion';
 import GlassCard from '../ui/GlassCard';
 import { fadeUp, staggerContainer } from '../ui/motion';
 import { clampRating, MAX_BOT_RATING, MIN_BOT_RATING } from '../utilities/botStrength';
+import { useAppDispatch, useAppSelector } from '../app-state/hooks';
+import { setWinner } from '../app-state/features/gameSlice';
 
 const presets = [
-    { label: 'Easy', rating: 800, piece: '♙', desc: 'Relaxed play around 800 — great for learning.' },
+    { label: 'Easy', rating: 800, piece: '♙', desc: 'Relaxed play around 800, great for learning.' },
     { label: 'Medium', rating: 1500, piece: '♘', desc: 'A solid ~1500 club-level challenge.' },
     { label: 'Hard', rating: 2200, piece: '♕', desc: 'Around 2200. Bring your best preparation.' },
 ];
 
+/** Reads back the difficulty from "Stockfish (~1500)" — the opponent name initGame stores for a bot game. */
+const ratingFromOpponentName = (name: string): number | null => {
+    const match = name.match(/Stockfish \(~(\d+)\)/);
+    return match ? Number(match[1]) : null;
+};
+
 const PlayComputer = () => {
     const { tokens } = useTheme();
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
+    const opponent = useAppSelector((s) => s.game.gameState.opponent);
+    const gameEnded = useAppSelector((s) => s.game.gameState.gameEnded);
+    const room = useAppSelector((s) => s.game.gameState.room);
+    const inProgressRating = !gameEnded && !room ? ratingFromOpponentName(opponent.name) : null;
+
     const [rating, setRating] = useState(800);
     const [customOpen, setCustomOpen] = useState(false);
     const [customRating, setCustomRating] = useState(1200);
     const isPreset = presets.some((p) => p.rating === rating);
 
     const startGame = () => navigate('/play/computer/game', { state: { rating } });
+    const resumeGame = () => navigate('/play/computer/game', { state: { rating: inProgressRating } });
+    const resignInProgress = () => dispatch(setWinner('black'));
 
     return (
         <motion.div variants={staggerContainer} initial="initial" animate="animate">
@@ -30,6 +46,33 @@ const PlayComputer = () => {
                     Play the computer
                 </Typography>
             </motion.div>
+            {inProgressRating !== null && (
+                <motion.div variants={fadeUp}>
+                    <GlassCard
+                        sx={{
+                            padding: '20px 24px',
+                            marginBottom: '32px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '16px',
+                            flexWrap: 'wrap',
+                        }}
+                    >
+                        <Typography sx={{ fontSize: '0.95rem' }}>
+                            You have a game in progress against Stockfish (~{inProgressRating}).
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: '10px' }}>
+                            <Button variant="outlined" color="error" onClick={resignInProgress}>
+                                Resign it
+                            </Button>
+                            <Button variant="contained" onClick={resumeGame}>
+                                Resume
+                            </Button>
+                        </Box>
+                    </GlassCard>
+                </motion.div>
+            )}
             <Box
                 sx={{
                     display: 'grid',

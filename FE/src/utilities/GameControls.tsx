@@ -10,9 +10,12 @@ import { pgnToPlies } from './pgnPlies';
 type Props = {
     room?: string;
     isOnline: boolean;
+    /** 1-based ply index currently shown on the board (ReviewBoard convention: 0 = starting position), or null when following the live game. */
+    viewIndex?: number | null;
+    onSelectMove?: (index: number) => void;
 }
 
-const GameControls = ({ room, isOnline }: Props) => {
+const GameControls = ({ room, isOnline, viewIndex = null, onSelectMove }: Props) => {
     const { tokens, palette } = useTheme();
     const pgn = useAppSelector((state)=> state.game.gameState.pgn)
     const opponent = useAppSelector((state)=> state.game.gameState.opponent)
@@ -29,11 +32,14 @@ const GameControls = ({ room, isOnline }: Props) => {
         return pairs;
     }, [plies]);
     const lastPlyIndex = plies.length - 1;
+    const isReviewing = viewIndex !== null && viewIndex !== plies.length;
 
-    // Keeps the most recent move in view as the list grows.
+    // Keeps the most recent move in view as the list grows — but not while
+    // the player has deliberately scrolled back to look at an earlier move.
     useEffect(() => {
+        if (isReviewing) return;
         listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-    }, [plies.length]);
+    }, [plies.length, isReviewing]);
 
     const handleResign = ()=>{
         if (isGameOver) return;
@@ -49,15 +55,22 @@ const GameControls = ({ room, isOnline }: Props) => {
         socket.emit('offer_draw', { room });
     }
 
-    const moveSx = (index: number) => ({
+    const moveSx = (flatIndex: number) => ({
         minWidth: '64px',
         borderRadius: '4px',
         padding: '1px 6px',
-        ...(index === lastPlyIndex && {
+        cursor: onSelectMove ? 'pointer' : undefined,
+        ...(flatIndex === lastPlyIndex && !isReviewing && {
             fontWeight: 700,
             color: 'primary.light',
             background: `rgba(${tokens.accentRgb},0.14)`,
         }),
+        ...(flatIndex + 1 === viewIndex && {
+            fontWeight: 700,
+            color: 'primary.light',
+            border: `1px solid rgba(${tokens.accentRgb},0.6)`,
+        }),
+        '&:hover': onSelectMove ? { background: `rgba(${tokens.accentRgb},0.1)` } : undefined,
     });
 
     return (
@@ -70,9 +83,19 @@ const GameControls = ({ room, isOnline }: Props) => {
                 padding: '20px',
             }}
         >
-            <Typography sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
-                Moves
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <Typography sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Moves
+                </Typography>
+                {isReviewing && onSelectMove && (
+                    <Typography
+                        onClick={() => onSelectMove(plies.length)}
+                        sx={{ fontSize: '0.8rem', color: 'primary.light', fontWeight: 600, cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                    >
+                        Back to live
+                    </Typography>
+                )}
+            </Box>
             <Box
                 ref={listRef}
                 sx={{
@@ -97,8 +120,14 @@ const GameControls = ({ room, isOnline }: Props) => {
                     movePairs.map((pair) => (
                         <Box key={pair.number} sx={{ display: 'flex', gap: '10px', padding: '2px 0' }}>
                             <Box sx={{ color: 'text.secondary', minWidth: '22px' }}>{pair.number}.</Box>
-                            <Box sx={moveSx(pair.number * 2 - 2)}>{pair.white}</Box>
-                            {pair.black && <Box sx={moveSx(pair.number * 2 - 1)}>{pair.black}</Box>}
+                            <Box sx={moveSx(pair.number * 2 - 2)} onClick={() => onSelectMove?.(pair.number * 2 - 1)}>
+                                {pair.white}
+                            </Box>
+                            {pair.black && (
+                                <Box sx={moveSx(pair.number * 2 - 1)} onClick={() => onSelectMove?.(pair.number * 2)}>
+                                    {pair.black}
+                                </Box>
+                            )}
                         </Box>
                     ))
                 )}
