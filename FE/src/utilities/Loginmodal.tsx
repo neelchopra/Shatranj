@@ -29,6 +29,7 @@ const Loginmodal = forwardRef<HTMLDivElement, { onClose?: () => void }>(
     const [passwordLogin, setPasswordLogin] = useState('');
     const [nameRegister, setNameRegister] = useState('');
     const [passwordRegister, setPasswordRegister] = useState('');
+    const [confirmPasswordRegister, setConfirmPasswordRegister] = useState('');
     const [emailRegister, setEmailRegister] = useState('');
 
     const dispatch = useAppDispatch();
@@ -36,12 +37,16 @@ const Loginmodal = forwardRef<HTMLDivElement, { onClose?: () => void }>(
     const serverError = useAppSelector((state) => state.userPreference.error);
 
     const handleRegister = () => {
-      if (!nameRegister || !passwordRegister || !emailRegister) {
+      if (!nameRegister || !passwordRegister || !confirmPasswordRegister || !emailRegister) {
         setFormError('All fields are required');
         return;
       }
       if (!isValidEmail(emailRegister)) {
         setFormError('Please enter a valid email');
+        return;
+      }
+      if (passwordRegister !== confirmPasswordRegister) {
+        setFormError('Passwords do not match');
         return;
       }
       setFormError('');
@@ -253,6 +258,24 @@ const Loginmodal = forwardRef<HTMLDivElement, { onClose?: () => void }>(
                   </InputAdornment>
                 ),
                 endAdornment: passwordAdornment,
+              }}
+              sx={{ marginBottom: '16px' }}
+            />
+            <TextField
+              fullWidth
+              variant="filled"
+              label="Confirm password"
+              type={showPassword ? 'text' : 'password'}
+              value={confirmPasswordRegister}
+              onChange={(e) => setConfirmPasswordRegister(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleRegister(); }}
+              error={confirmPasswordRegister !== '' && confirmPasswordRegister !== passwordRegister}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockOutlinedIcon fontSize="small" />
+                  </InputAdornment>
+                ),
               }}
             />
           </motion.div>

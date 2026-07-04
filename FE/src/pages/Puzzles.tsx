@@ -99,7 +99,7 @@ const Puzzles = () => {
 								border: "1px solid rgba(255,255,255,0.08)",
 								boxShadow: tokens.glowSoft,
 								display: "inline-block",
-								padding: outcome ? "12px" : 0,
+								padding: "12px",
 							}}
 						>
 							{outcome ? (
@@ -109,7 +109,12 @@ const Puzzles = () => {
 									orientation={puzzle.fen.split(" ")[1] === "w" ? "black" : "white"}
 								/>
 							) : (
-								<PuzzleBoard key={puzzle._id} puzzle={puzzle} boardWidth={boardWidth} onResult={handleResult} />
+								<>
+									<PuzzleBoard key={puzzle._id} puzzle={puzzle} boardWidth={boardWidth} onResult={handleResult} />
+									{/* Reserves the same height ReviewBoard's Back/Forward controls take up,
+									    so solving a puzzle doesn't shift the layout when they appear. */}
+									<Box sx={{ height: "76px" }} />
+								</>
 							)}
 						</Box>
 					)}
