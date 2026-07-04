@@ -22,6 +22,16 @@ export type LeaderboardPlayer = {
   number_of_matches: number;
 };
 
+export type PuzzleLeaderboardPlayer = {
+  _id: string;
+  username: string;
+  puzzle_rating: number;
+  puzzle_streak: number;
+  best_streak: number;
+};
+
+type LeaderboardVariant = "games" | "puzzles";
+
 const medallions: Record<number, { color: string; background: string }> = {
   0: { color: "#FBBF24", background: "rgba(251,191,36,0.15)" },
   1: { color: "#CBD5E1", background: "rgba(203,213,225,0.12)" },
@@ -37,7 +47,18 @@ const headCellSx = {
   borderBottom: "1px solid rgba(148,163,184,0.12)",
 };
 
-const Leaderboard = ({ players }: { players: LeaderboardPlayer[] }) => {
+type Props = {
+  players: (LeaderboardPlayer | PuzzleLeaderboardPlayer)[];
+  variant?: LeaderboardVariant;
+};
+
+const ratingOf = (player: LeaderboardPlayer | PuzzleLeaderboardPlayer, variant: LeaderboardVariant) =>
+  variant === "puzzles" ? (player as PuzzleLeaderboardPlayer).puzzle_rating : (player as LeaderboardPlayer).rating;
+
+const secondaryStatOf = (player: LeaderboardPlayer | PuzzleLeaderboardPlayer, variant: LeaderboardVariant) =>
+  variant === "puzzles" ? (player as PuzzleLeaderboardPlayer).best_streak : (player as LeaderboardPlayer).number_of_matches;
+
+const Leaderboard = ({ players, variant = "games" }: Props) => {
   const [isViewAll, setIsViewAll] = useState(false);
 
   const visible = isViewAll ? players : players.slice(0, 5);
@@ -53,9 +74,9 @@ const Leaderboard = ({ players }: { players: LeaderboardPlayer[] }) => {
             <TableRow>
               <TableCell sx={{ ...headCellSx, width: 70 }}>Rank</TableCell>
               <TableCell sx={headCellSx}>Player</TableCell>
-              <TableCell sx={headCellSx} align="right">Rating</TableCell>
+              <TableCell sx={headCellSx} align="right">{variant === "puzzles" ? "Puzzle rating" : "Rating"}</TableCell>
               <TableCell sx={{ ...headCellSx, display: { xs: "none", sm: "table-cell" } }} align="right">
-                Games
+                {variant === "puzzles" ? "Best streak" : "Games"}
               </TableCell>
             </TableRow>
           </TableHead>
@@ -107,12 +128,12 @@ const Leaderboard = ({ players }: { players: LeaderboardPlayer[] }) => {
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
-                      {player.rating}
+                      {ratingOf(player, variant)}
                     </Typography>
                   </TableCell>
                   <TableCell align="right" sx={{ display: { xs: "none", sm: "table-cell" } }}>
                     <Typography sx={{ color: "text.secondary", fontVariantNumeric: "tabular-nums" }}>
-                      {player.number_of_matches}
+                      {secondaryStatOf(player, variant)}
                     </Typography>
                   </TableCell>
                 </TableRow>
