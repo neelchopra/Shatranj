@@ -41,20 +41,34 @@ const Puzzles = () => {
 	const [outcome, setOutcome] = useState<PuzzleOutcome | null>(null);
 	const [attempt, setAttempt] = useState<AttemptResult | null>(null);
 	const [error, setError] = useState("");
+	const [showSolution, setShowSolution] = useState(false);
+	const [foundAfterFail, setFoundAfterFail] = useState(false);
 	const boardContainerRef = useRef<HTMLDivElement>(null);
 	const boardWidth = useBoardWidth(boardContainerRef);
+	const puzzleRequestRef = useRef(0);
 
 	const loadPuzzle = useCallback(() => {
+		const requestId = ++puzzleRequestRef.current;
 		setOutcome(null);
 		setAttempt(null);
+		setShowSolution(false);
+		setFoundAfterFail(false);
 		setError("");
 		api
 			.get("/puzzles/next")
-			.then((res) => setPuzzle(res.data))
-			.catch(() => setError("Could not load a puzzle right now."));
+			.then((res) => {
+				if (puzzleRequestRef.current === requestId) setPuzzle(res.data);
+			})
+			.catch(() => {
+				if (puzzleRequestRef.current === requestId) setError("Could not load a puzzle right now.");
+			});
 	}, []);
 
 	useEffect(() => { loadPuzzle(); }, [loadPuzzle]);
+
+	const solverColor: "white" | "black" =
+		puzzle && puzzle.fen.split(" ")[1] === "w" ? "black" : "white";
+	const showReview = !!outcome && (outcome.solved || showSolution);
 
 	const handleResult = (result: PuzzleOutcome) => {
 		if (!puzzle) return;
@@ -71,7 +85,7 @@ const Puzzles = () => {
 
 	const reviewOnAnalysisBoard = () => {
 		if (!outcome) return;
-		navigate("/analysis", { state: { pgn: outcome.solutionPgn } });
+		navigate("/analysis", { state: { pgn: outcome.solutionPgn, orientation: solverColor } });
 	};
 
 	return (
@@ -103,15 +117,21 @@ const Puzzles = () => {
 								padding: "12px",
 							}}
 						>
-							{outcome ? (
+							{showReview ? (
 								<ReviewBoard
-									plies={pgnToPlies(outcome.solutionPgn)}
+									plies={pgnToPlies(outcome!.solutionPgn)}
 									boardWidth={boardWidth}
-									orientation={puzzle.fen.split(" ")[1] === "w" ? "black" : "white"}
+									orientation={solverColor}
 								/>
 							) : (
 								<>
-									<PuzzleBoard key={puzzle._id} puzzle={puzzle} boardWidth={boardWidth} onResult={handleResult} />
+									<PuzzleBoard
+										key={puzzle._id}
+										puzzle={puzzle}
+										boardWidth={boardWidth}
+										onResult={handleResult}
+										onLineComplete={() => setFoundAfterFail(true)}
+									/>
 									<ReviewControls
 										index={0}
 										total={0}
@@ -130,10 +150,31 @@ const Puzzles = () => {
 
 				<GlassCard sx={{ padding: "28px", minWidth: 260, maxWidth: 360 }}>
 					{puzzle && (
-						<Chip
-							label={`Puzzle rating ${puzzle.rating}`}
-							sx={{ marginBottom: "20px", background: "rgba(255,255,255,0.06)", color: "text.secondary" }}
-						/>
+						<Box sx={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" }}>
+							<Chip
+								label={`Puzzle rating ${puzzle.rating}`}
+								sx={{ background: "rgba(255,255,255,0.06)", color: "text.secondary" }}
+							/>
+							{!outcome && (
+								<Chip
+									icon={
+										<Box
+											component="span"
+											sx={{
+												width: 12,
+												height: 12,
+												borderRadius: "50%",
+												marginLeft: "8px",
+												background: solverColor === "white" ? "#F1F5F9" : "#0B0E14",
+												border: "1px solid rgba(255,255,255,0.4)",
+											}}
+										/>
+									}
+									label={solverColor === "white" ? "White to move" : "Black to move"}
+									sx={{ background: "rgba(255,255,255,0.06)", color: "text.primary", fontWeight: 600 }}
+								/>
+							)}
+						</Box>
 					)}
 
 					{outcome && (
@@ -149,7 +190,11 @@ const Puzzles = () => {
 							>
 								{outcome.solved ? <CheckCircleOutlineIcon /> : <HighlightOffIcon />}
 								<Typography sx={{ fontWeight: 700 }}>
-									{outcome.solved ? "Solved!" : "Not quite"}
+									{outcome.solved
+										? "Solved!"
+										: foundAfterFail
+											? "You found it — already counted as a miss"
+											: "Not quite — keep trying, or view the solution"}
 								</Typography>
 							</Box>
 						</motion.div>
@@ -178,7 +223,7 @@ const Puzzles = () => {
 						</Typography>
 					)}
 
-					{outcome?.mistake && (
+					{outcome?.mistake && (showReview || foundAfterFail) && (
 						<Box sx={{ marginBottom: "16px", padding: "12px 14px", borderRadius: "10px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.25)" }}>
 							<Typography sx={{ fontSize: "0.9rem" }}>
 								You played{" "}
@@ -194,7 +239,7 @@ const Puzzles = () => {
 						</Box>
 					)}
 
-					{outcome && (
+					{outcome && (showReview || foundAfterFail) && (
 						<Box sx={{ marginBottom: "20px" }}>
 							<Typography sx={{ color: "text.secondary", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
 								Full solution
@@ -209,7 +254,12 @@ const Puzzles = () => {
 					    reaching "Next puzzle" never requires scrolling past
 					    the stats/solution content above. */}
 					<Box sx={{ display: { xs: "none", lg: "block" } }}>
-						{outcome && (
+						{outcome && !showReview && (
+							<Button variant="outlined" fullWidth onClick={() => setShowSolution(true)} sx={{ marginBottom: "12px" }}>
+								View solution
+							</Button>
+						)}
+						{showReview && (
 							<Button variant="outlined" fullWidth onClick={reviewOnAnalysisBoard} sx={{ marginBottom: "12px" }}>
 								Play it out on the analysis board
 							</Button>
@@ -243,7 +293,12 @@ const Puzzles = () => {
 					borderTop: tokens.glassStrong.border,
 				}}
 			>
-				{outcome && (
+				{outcome && !showReview && (
+					<Button variant="outlined" fullWidth onClick={() => setShowSolution(true)}>
+						Solution
+					</Button>
+				)}
+				{showReview && (
 					<Button variant="outlined" fullWidth onClick={reviewOnAnalysisBoard}>
 						Analyze
 					</Button>

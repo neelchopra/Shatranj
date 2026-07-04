@@ -33,7 +33,10 @@ type Props = {
 	puzzle: PuzzleData;
 	boardWidth: number;
 	onResult: (outcome: PuzzleOutcome) => void;
+	onLineComplete: () => void;
 };
+
+const WRONG_SQUARE_STYLE = { background: "rgba(248,113,113,0.55)" };
 
 const uci = (move: { from: string; to: string; promotion?: string }) =>
 	`${move.from}${move.to}${move.promotion || ""}`;
@@ -64,11 +67,13 @@ const sanLine = (fen: string, moves: string[]): string[] => replayLine(fen, move
  * the opponent's plies are auto-played, the solver's must be typed in and
  * are checked against the exact expected UCI move.
  */
-const PuzzleBoard = ({ puzzle, boardWidth, onResult }: Props) => {
+const PuzzleBoard = ({ puzzle, boardWidth, onResult, onLineComplete }: Props) => {
 	const chessRef = useRef<Chess | null>(null);
 	const moveIndexRef = useRef(0);
 	const solverMoveCountRef = useRef(0);
-	const concludedRef = useRef(false);
+	const reportedRef = useRef(false); // onResult may only fire once per puzzle
+	const failedRef = useRef(false);
+	const revertingRef = useRef(false); // input ignored while a wrong move is displayed
 	const solutionSanRef = useRef<string[]>([]);
 	const solutionPgnRef = useRef("");
 	const shakeControls = useAnimationControls();
@@ -76,6 +81,7 @@ const PuzzleBoard = ({ puzzle, boardWidth, onResult }: Props) => {
 	const [position, setPosition] = useState(puzzle.fen);
 	const [orientation, setOrientation] = useState<"white" | "black">("white");
 	const [optionSquares, setOptionSquares] = useState({});
+	const [wrongSquares, setWrongSquares] = useState<{ [square: string]: React.CSSProperties }>({});
 	const [status, setStatus] = useState<"setup" | "playing" | "done">("setup");
 	const sourceSquareRef = useRef<string>("");
 
@@ -90,12 +96,15 @@ const PuzzleBoard = ({ puzzle, boardWidth, onResult }: Props) => {
 		chessRef.current = chess;
 		moveIndexRef.current = 0;
 		solverMoveCountRef.current = 0;
-		concludedRef.current = false;
+		reportedRef.current = false;
+		failedRef.current = false;
+		revertingRef.current = false;
 		const replay = replayLine(puzzle.fen, puzzle.moves);
 		solutionSanRef.current = replay.sans;
 		solutionPgnRef.current = replay.pgn;
 		setPosition(chess.fen());
 		setOptionSquares({});
+		setWrongSquares({});
 		setStatus("setup");
 
 		// moves[0] is the opponent's setup move; the solver plays the opposite color.
@@ -114,64 +123,83 @@ const PuzzleBoard = ({ puzzle, boardWidth, onResult }: Props) => {
 		return () => clearTimeout(timer);
 	}, [puzzle]);
 
-	const conclude = (solved: boolean, mistake?: PuzzleMistake) => {
-		if (concludedRef.current) return;
-		concludedRef.current = true;
-		setStatus("done");
-		playGameEndSound(solved ? "win" : "loss");
+	const report = (solved: boolean, mistake?: PuzzleMistake) => {
+		if (reportedRef.current) return;
+		reportedRef.current = true;
 		onResult({ solved, solutionSan: solutionSanRef.current, solutionPgn: solutionPgnRef.current, mistake });
+	};
+
+	const finishLine = () => {
+		setStatus("done");
+		playGameEndSound("win");
+		if (failedRef.current) onLineComplete();
+		else report(true);
 	};
 
 	const playAutoReply = () => {
 		const chess = chessRef.current!;
 		const next = puzzle.moves[moveIndexRef.current];
-		if (!next) return conclude(true);
+		if (!next) return finishLine();
 		setTimeout(() => {
 			const move = chess.move(uciToMoveInput(next));
 			moveIndexRef.current += 1;
 			setPosition(chess.fen());
 			if (move?.captured) playCaptureSound();
 			else playMoveSound();
-			if (moveIndexRef.current >= puzzle.moves.length) conclude(true);
+			if (moveIndexRef.current >= puzzle.moves.length) finishLine();
 		}, 500);
 	};
 
 	const attemptMove = (from: string, to: string, promotion?: string): boolean => {
-		if (status !== "playing" || from === to) return false;
+		if (status !== "playing" || revertingRef.current || from === to) return false;
 		const chess = chessRef.current!;
 		const expected = puzzle.moves[moveIndexRef.current];
 		const attempted = uci({ from, to, promotion });
-		solverMoveCountRef.current += 1;
 
 		// Accept either the exact promotion or a bare match (queen is implied when unspecified).
 		if (expected !== attempted && expected !== `${from}${to}`) {
-			shakeBoard();
 			const expectedSan = sanLine(chess.fen(), [expected])[0] || expected;
-			let playedSan: string | null = null;
+			let wrongMove;
 			try {
-				playedSan = new Chess(chess.fen()).move({ from, to, promotion: promotion || "q" }).san;
+				wrongMove = chess.move({ from, to, promotion: promotion || "q" });
 			} catch {
-				playedSan = null;
+				// Illegal attempt — snap back with a shake, no penalty.
+				shakeBoard();
+				return false;
 			}
-			conclude(false, { moveNumber: solverMoveCountRef.current, expectedSan, playedSan });
-			return false;
+			// Legal but wrong: show it in red, count the failure once, then undo.
+			solverMoveCountRef.current += 1;
+			playIllegalSound();
+			setPosition(chess.fen());
+			setWrongSquares({ [from]: WRONG_SQUARE_STYLE, [to]: WRONG_SQUARE_STYLE });
+			revertingRef.current = true;
+			if (!failedRef.current) {
+				failedRef.current = true;
+				report(false, { moveNumber: solverMoveCountRef.current, expectedSan, playedSan: wrongMove.san });
+			}
+			setTimeout(() => {
+				chess.undo();
+				setPosition(chess.fen());
+				setWrongSquares({});
+				revertingRef.current = false;
+			}, 800);
+			return true;
 		}
 		let move;
 		try {
 			move = chess.move({ from, to, promotion: promotion || "q" });
 		} catch {
 			shakeBoard();
-			const expectedSan = sanLine(chess.fen(), [expected])[0] || expected;
-			conclude(false, { moveNumber: solverMoveCountRef.current, expectedSan, playedSan: null });
 			return false;
 		}
+		solverMoveCountRef.current += 1;
 		moveIndexRef.current += 1;
 		setPosition(chess.fen());
 		if (move.captured) playCaptureSound();
 		else playMoveSound();
 
 		if (moveIndexRef.current >= puzzle.moves.length) {
-			conclude(true);
+			finishLine();
 		} else {
 			playAutoReply();
 		}
@@ -202,7 +230,7 @@ const PuzzleBoard = ({ puzzle, boardWidth, onResult }: Props) => {
 
 	const handleClick = (square: Square) => {
 		const chess = chessRef.current!;
-		if (status !== "playing") return false;
+		if (status !== "playing" || revertingRef.current) return false;
 
 		const selected = sourceSquareRef.current;
 		if (selected) {
@@ -237,7 +265,7 @@ const PuzzleBoard = ({ puzzle, boardWidth, onResult }: Props) => {
 				boardOrientation={orientation}
 				customDarkSquareStyle={{ backgroundColor: tokens.board.dark }}
 				customLightSquareStyle={{ backgroundColor: tokens.board.light }}
-				customSquareStyles={{ ...optionSquares }}
+				customSquareStyles={{ ...optionSquares, ...wrongSquares }}
 				animationDuration={150}
 				arePremovesAllowed={false}
 			/>
