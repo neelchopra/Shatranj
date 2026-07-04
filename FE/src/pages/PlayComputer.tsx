@@ -1,19 +1,26 @@
 import React, { useState } from 'react';
 import Typography from '@mui/material/Typography';
-import { Box, Button } from '@mui/material';
-import { NavLink } from 'react-router-dom';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Slider, TextField } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import GlassCard from '../ui/GlassCard';
 import { fadeUp, staggerContainer } from '../ui/motion';
+import { clampRating, MAX_BOT_RATING, MIN_BOT_RATING } from '../utilities/botStrength';
 
-const difficulties = [
-    { label: 'Easy', value: 2, piece: '♙', desc: 'Casual play — the engine looks 2 moves ahead.' },
-    { label: 'Medium', value: 5, piece: '♘', desc: 'A solid challenge for club-level players.' },
-    { label: 'Hard', value: 8, piece: '♕', desc: 'Deep searches. Bring your best preparation.' },
+const presets = [
+    { label: 'Easy', rating: 800, piece: '♙', desc: 'Relaxed play around 800 — great for learning.' },
+    { label: 'Medium', rating: 1500, piece: '♘', desc: 'A solid ~1500 club-level challenge.' },
+    { label: 'Hard', rating: 2200, piece: '♕', desc: 'Around 2200. Bring your best preparation.' },
 ];
 
 const PlayComputer = () => {
-    const [depth, setDepth] = useState(2);
+    const navigate = useNavigate();
+    const [rating, setRating] = useState(800);
+    const [customOpen, setCustomOpen] = useState(false);
+    const [customRating, setCustomRating] = useState(1200);
+    const isPreset = presets.some((p) => p.rating === rating);
+
+    const startGame = () => navigate('/play/computer/game', { state: { rating } });
 
     return (
         <motion.div variants={staggerContainer} initial="initial" animate="animate">
@@ -25,19 +32,19 @@ const PlayComputer = () => {
             <Box
                 sx={{
                     display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' },
+                    gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
                     gap: 3,
-                    maxWidth: 900,
+                    maxWidth: 1100,
                     marginBottom: '32px',
                 }}
             >
-                {difficulties.map((difficulty) => {
-                    const selected = depth === difficulty.value;
+                {presets.map((preset) => {
+                    const selected = rating === preset.rating;
                     return (
-                        <motion.div key={difficulty.value} variants={fadeUp}>
+                        <motion.div key={preset.rating} variants={fadeUp}>
                             <GlassCard
                                 hover
-                                onClick={() => setDepth(difficulty.value)}
+                                onClick={() => setRating(preset.rating)}
                                 sx={{
                                     padding: '28px',
                                     height: '100%',
@@ -50,26 +57,85 @@ const PlayComputer = () => {
                                 }}
                             >
                                 <Typography sx={{ fontSize: '2.6rem', lineHeight: 1, marginBottom: '12px' }}>
-                                    {difficulty.piece}
+                                    {preset.piece}
                                 </Typography>
                                 <Typography variant="h3" sx={{ marginBottom: '8px', color: selected ? 'primary.light' : 'text.primary' }}>
-                                    {difficulty.label}
+                                    {preset.label}
                                 </Typography>
                                 <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem' }}>
-                                    {difficulty.desc}
+                                    {preset.desc}
                                 </Typography>
                             </GlassCard>
                         </motion.div>
                     );
                 })}
+                <motion.div variants={fadeUp}>
+                    <GlassCard
+                        hover
+                        onClick={() => { setCustomRating(isPreset ? 1200 : rating); setCustomOpen(true); }}
+                        sx={{
+                            padding: '28px',
+                            height: '100%',
+                            textAlign: 'center',
+                            ...(!isPreset && {
+                                borderColor: 'rgba(16,185,129,0.55)',
+                                boxShadow: '0 0 0 1px rgba(16,185,129,0.35), 0 0 24px rgba(16,185,129,0.25)',
+                                background: 'rgba(16,185,129,0.07)',
+                            }),
+                        }}
+                    >
+                        <Typography sx={{ fontSize: '2.6rem', lineHeight: 1, marginBottom: '12px' }}>♔</Typography>
+                        <Typography variant="h3" sx={{ marginBottom: '8px', color: !isPreset ? 'primary.light' : 'text.primary' }}>
+                            {isPreset ? 'Custom' : `Custom · ${rating}`}
+                        </Typography>
+                        <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem' }}>
+                            Pick any strength from {MIN_BOT_RATING} to {MAX_BOT_RATING}.
+                        </Typography>
+                    </GlassCard>
+                </motion.div>
             </Box>
             <motion.div variants={fadeUp}>
-                <NavLink to='/play/computer/game' state={depth} style={{ textDecoration: 'none' }}>
-                    <Button variant='contained' size='large' sx={{ padding: '12px 40px', fontSize: '1.05rem' }}>
-                        Play
-                    </Button>
-                </NavLink>
+                <Button variant='contained' size='large' onClick={startGame} sx={{ padding: '12px 40px', fontSize: '1.05rem' }}>
+                    Play at ~{rating}
+                </Button>
             </motion.div>
+
+            <Dialog open={customOpen} onClose={() => setCustomOpen(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>Custom bot strength</DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ color: 'text.secondary', marginBottom: '24px', fontSize: '0.9rem' }}>
+                        The bot plays at roughly this rating.
+                    </Typography>
+                    <Slider
+                        value={customRating}
+                        min={MIN_BOT_RATING}
+                        max={MAX_BOT_RATING}
+                        step={50}
+                        valueLabelDisplay="on"
+                        onChange={(_, value) => setCustomRating(value as number)}
+                        sx={{ marginTop: '20px' }}
+                    />
+                    <TextField
+                        label="Rating"
+                        type="number"
+                        size="small"
+                        fullWidth
+                        value={customRating}
+                        onChange={(e) => setCustomRating(Number(e.target.value) || MIN_BOT_RATING)}
+                        inputProps={{ min: MIN_BOT_RATING, max: MAX_BOT_RATING, step: 50 }}
+                        sx={{ marginTop: '16px' }}
+                    />
+                </DialogContent>
+                <DialogActions sx={{ padding: '0 24px 20px' }}>
+                    <Button onClick={() => setCustomOpen(false)}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        onClick={() => { setRating(clampRating(customRating)); setCustomOpen(false); }}
+                    >
+                        Select
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </motion.div>
     );
 };

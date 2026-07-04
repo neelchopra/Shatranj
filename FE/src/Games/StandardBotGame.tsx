@@ -11,18 +11,18 @@ import useBoardWidth from '../hooks/useBoardWidth';
 const StandardBotGame = () => {
     const location = useLocation()
     const dispatch = useAppDispatch()
-    const depth = location.state as number | null;
+    const rating = (location.state as { rating?: number } | null)?.rating ?? null;
     const boardContainerRef = useRef<HTMLDivElement>(null);
     const boardWidth = useBoardWidth(boardContainerRef);
 
     useEffect(() => {
-        if (!depth) return;
+        if (!rating) return;
         dispatch(initGame({
-            opponent: { name: `Stockfish (depth ${depth})`, rating: 0, color: 'black' },
+            opponent: { name: `Stockfish (~${rating})`, rating, color: 'black' },
         }))
-    }, [dispatch, depth])
+    }, [dispatch, rating])
 
-    if (!depth) return <Navigate to="/play/computer" replace />;
+    if (!rating) return <Navigate to="/play/computer" replace />;
 
     return (
         <Box
@@ -44,7 +44,7 @@ const StandardBotGame = () => {
                             boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
                         }}
                     >
-                        <StandardBotBoard depth={depth} color="white" boardWidth={boardWidth} />
+                        <StandardBotBoard rating={rating} color="white" boardWidth={boardWidth} />
                     </Box>
                 )}
             </Box>

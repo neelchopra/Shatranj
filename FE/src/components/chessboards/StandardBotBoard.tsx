@@ -9,9 +9,10 @@ import Engine from '../../Engine';
 import { evaluateGame } from '../../utilities/chessResult';
 import { playIllegalSound, soundForMove } from '../../utilities/sounds';
 import { tokens } from '../../theme';
+import { limitsForRating } from '../../utilities/botStrength';
 
 type Props = {
-    depth: number;
+    rating: number;
     color: string; // the human always plays white against the bot
     boardWidth: number;
 }
@@ -46,6 +47,7 @@ const StandardBotBoard = (props: Props)=>{
     useEffect(() => {
         const engine = new Engine();
         engineRef.current = engine;
+        engine.setOption('Skill Level', limitsForRating(props.rating).skillLevel);
         // Single persistent listener — the engine replies whenever we ask for a move.
         engine.onMessage(({ bestMove }) => {
             if (!bestMove) return;
@@ -73,8 +75,9 @@ const StandardBotBoard = (props: Props)=>{
     const requestEngineMove = () => {
         const chess = chessRef.current!;
         if (chess.isGameOver()) return;
+        const limits = limitsForRating(props.rating);
         setTimeout(() => {
-            engineRef.current?.evaluatePosition(chess.fen(), props.depth);
+            engineRef.current?.findMove(chess.fen(), limits);
         }, 500);
     };
 
