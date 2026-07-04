@@ -5,6 +5,7 @@ import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
+import SwapVertIcon from "@mui/icons-material/SwapVert";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 import { motion } from "framer-motion";
@@ -34,7 +35,8 @@ const uciToSan = (fen: string, uci: string) => {
 
 const Analysis = () => {
 	const location = useLocation();
-	const pgn = (location.state as { pgn?: string } | null)?.pgn;
+	const navState = location.state as { pgn?: string; orientation?: "white" | "black" } | null;
+	const pgn = navState?.pgn;
 
 	const plies = useMemo(() => pgnToPlies(pgn || ""), [pgn]);
 
@@ -42,6 +44,7 @@ const Analysis = () => {
 	const [evalCp, setEvalCp] = useState<number | null>(null);
 	const [mateIn, setMateIn] = useState<number | null>(null);
 	const [bestMoveSan, setBestMoveSan] = useState("");
+	const [orientation, setOrientation] = useState<"white" | "black">(navState?.orientation ?? "white");
 
 	const engineRef = useRef<Engine | null>(null);
 	const boardContainerRef = useRef<HTMLDivElement>(null);
@@ -143,6 +146,7 @@ const Analysis = () => {
 									position={position}
 									arePiecesDraggable={false}
 									boardWidth={boardWidth}
+									boardOrientation={orientation}
 									customDarkSquareStyle={{ backgroundColor: tokens.board.dark }}
 									customLightSquareStyle={{ backgroundColor: tokens.board.light }}
 								/>
@@ -177,6 +181,12 @@ const Analysis = () => {
 						</IconButton>
 						<IconButton onClick={() => setIndex(plies.length)} disabled={index === plies.length}>
 							<SkipNextIcon />
+						</IconButton>
+						<IconButton
+							onClick={() => setOrientation((o) => (o === "white" ? "black" : "white"))}
+							aria-label="Flip board"
+						>
+							<SwapVertIcon />
 						</IconButton>
 					</Box>
 					<Typography sx={{ textAlign: "center", color: "text.secondary", marginTop: "12px", fontSize: "0.9rem" }}>
