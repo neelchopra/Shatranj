@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { useEffect, useMemo, useRef } from 'react'
 import { useAppDispatch, useAppSelector } from '../app-state/hooks';
 import { Box, Typography, Button, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { setWinner } from '../app-state/features/gameSlice';
 import { socket } from '../socket';
 import GlassCard from '../ui/GlassCard';
+import { pgnToPlies } from './pgnPlies';
 
 type Props = {
     room?: string;
@@ -15,8 +16,24 @@ const GameControls = ({ room, isOnline }: Props) => {
     const { tokens, palette } = useTheme();
     const pgn = useAppSelector((state)=> state.game.gameState.pgn)
     const opponent = useAppSelector((state)=> state.game.gameState.opponent)
-    const isGameOver = useAppSelector((state)=> state.game.gameState.isGameOver)
+    const isGameOver = useAppSelector((state)=> state.game.gameState.gameEnded)
     const dispatch = useAppDispatch()
+    const listRef = useRef<HTMLDivElement>(null);
+
+    const plies = useMemo(() => pgnToPlies(pgn), [pgn]);
+    const movePairs = useMemo(() => {
+        const pairs: { number: number; white?: string; black?: string }[] = [];
+        for (let i = 0; i < plies.length; i += 2) {
+            pairs.push({ number: i / 2 + 1, white: plies[i]?.san, black: plies[i + 1]?.san });
+        }
+        return pairs;
+    }, [plies]);
+    const lastPlyIndex = plies.length - 1;
+
+    // Keeps the most recent move in view as the list grows.
+    useEffect(() => {
+        listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
+    }, [plies.length]);
 
     const handleResign = ()=>{
         if (isGameOver) return;
@@ -32,6 +49,17 @@ const GameControls = ({ room, isOnline }: Props) => {
         socket.emit('offer_draw', { room });
     }
 
+    const moveSx = (index: number) => ({
+        minWidth: '64px',
+        borderRadius: '4px',
+        padding: '1px 6px',
+        ...(index === lastPlyIndex && {
+            fontWeight: 700,
+            color: 'primary.light',
+            background: `rgba(${tokens.accentRgb},0.14)`,
+        }),
+    });
+
     return (
         <GlassCard
             sx={{
@@ -46,6 +74,7 @@ const GameControls = ({ room, isOnline }: Props) => {
                 Moves
             </Typography>
             <Box
+                ref={listRef}
                 sx={{
                     flexGrow: 1,
                     minHeight: '140px',
@@ -53,14 +82,26 @@ const GameControls = ({ room, isOnline }: Props) => {
                     overflowY: 'auto',
                     padding: '14px',
                     borderRadius: `${tokens.radius.md}px`,
-                    background: 'rgba(0,0,0,0.2)',
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    background: tokens.inputBackground,
+                    border: tokens.glass.border,
                     marginBottom: '16px',
+                    fontFamily: tokens.fontMono,
+                    fontSize: '0.9rem',
                 }}
             >
-                <Typography sx={{ fontFamily: tokens.fontMono, fontSize: '0.9rem', color: 'text.secondary', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                    {pgn || 'No moves yet'}
-                </Typography>
+                {movePairs.length === 0 ? (
+                    <Typography sx={{ fontFamily: tokens.fontMono, fontSize: '0.9rem', color: 'text.secondary' }}>
+                        No moves yet
+                    </Typography>
+                ) : (
+                    movePairs.map((pair) => (
+                        <Box key={pair.number} sx={{ display: 'flex', gap: '10px', padding: '2px 0' }}>
+                            <Box sx={{ color: 'text.secondary', minWidth: '22px' }}>{pair.number}.</Box>
+                            <Box sx={moveSx(pair.number * 2 - 2)}>{pair.white}</Box>
+                            {pair.black && <Box sx={moveSx(pair.number * 2 - 1)}>{pair.black}</Box>}
+                        </Box>
+                    ))
+                )}
             </Box>
             {isOnline && (
                 <Button

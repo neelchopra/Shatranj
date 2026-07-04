@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import StandardOnlineBoard from "../components/chessboards/StandardOnlineBoard";
+import ReviewBoard from "../components/chessboards/ReviewBoard";
 import {
 	Box,
 	Button,
@@ -8,6 +9,7 @@ import {
 	DialogActions,
 	DialogTitle,
 	Snackbar,
+	useTheme,
 } from "@mui/material";
 import Timer from "../utilities/Timer";
 import GameControls from "../utilities/GameControls";
@@ -18,6 +20,7 @@ import { initGame, setWinner } from "../app-state/features/gameSlice";
 import { updateRating } from "../app-state/features/userPreferenceSlice";
 import { resultToScore, scoreToResult } from "../utilities/chessResult";
 import useBoardWidth from "../hooks/useBoardWidth";
+import { pgnToPlies } from "../utilities/pgnPlies";
 
 type GameNavState = {
 	room: string;
@@ -27,12 +30,14 @@ type GameNavState = {
 };
 
 const StandardGame = () => {
+	const { tokens } = useTheme();
 	const location = useLocation();
 	const dispatch = useAppDispatch();
 	const state = location.state as GameNavState | null;
 
 	const user = useAppSelector((s) => s.userPreference.user);
 	const isGameOver = useAppSelector((s) => s.game.gameState.isGameOver);
+	const gameEnded = useAppSelector((s) => s.game.gameState.gameEnded);
 	const result = useAppSelector((s) => s.game.gameState.result);
 	const pgn = useAppSelector((s) => s.game.gameState.pgn);
 
@@ -142,11 +147,19 @@ const StandardGame = () => {
 								borderRadius: "12px",
 								overflow: "hidden",
 								touchAction: "manipulation",
-								border: "1px solid rgba(255,255,255,0.08)",
-								boxShadow: "0 8px 32px rgba(0,0,0,0.45)",
+								border: tokens.glass.border,
+								boxShadow: tokens.glowSoft,
 							}}
 						>
-							<StandardOnlineBoard color={state.color} room={state.room} boardWidth={boardWidth} />
+							{gameEnded ? (
+								<ReviewBoard
+									plies={pgnToPlies(pgn)}
+									boardWidth={boardWidth}
+									orientation={state.color as "white" | "black"}
+								/>
+							) : (
+								<StandardOnlineBoard color={state.color} room={state.room} boardWidth={boardWidth} />
+							)}
 						</Box>
 					)}
 				</Box>

@@ -1,7 +1,7 @@
 import { createTheme } from "@mui/material";
 import type { Theme, ThemeOptions } from "@mui/material/styles";
 
-export type ThemeName = "emerald" | "rosewood" | "marble";
+export type ThemeName = "emerald" | "rosewood" | "marble" | "slate";
 
 export type Tokens = {
 	glass: { background: string; border: string; blur: string };
@@ -63,7 +63,7 @@ const THEME_DEFS: Record<ThemeName, ThemeDef> = {
 	// instead of a generic neutral board skin bolted onto a SaaS theme.
 	emerald: {
 		label: "Emerald",
-		swatch: ["#0B0D12", "#10B981", "#25422F", "#E9E4D2"],
+		swatch: ["#0B0D12", "#10B981", "#2F5239", "#E9E4D2"],
 		accentRgb: "16,185,129",
 		palette: {
 			mode: "dark",
@@ -76,7 +76,9 @@ const THEME_DEFS: Record<ThemeName, ThemeDef> = {
 			text: { primary: "#F1F5F9", secondary: "#94A3B8" },
 			divider: "rgba(148,163,184,0.12)",
 		},
-		board: { light: "#E9E4D2", dark: "#25422F", hintRgb: "230,168,68" },
+		// Dark square lightened a step from the first pass — it was reading
+		// closer to black than green at a glance.
+		board: { light: "#E9E4D2", dark: "#2F5239", hintRgb: "230,168,68" },
 		glass: { background: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.08)" },
 		glassStrong: { background: "rgba(18,21,28,0.75)", border: "rgba(255,255,255,0.10)" },
 		glowSoft: "0 8px 32px rgba(0,0,0,0.45)",
@@ -152,6 +154,38 @@ const THEME_DEFS: Record<ThemeName, ThemeDef> = {
 		inputBackgroundHover: "rgba(27,31,29,0.055)",
 		inputBorder: "rgba(27,31,29,0.10)",
 		backdrop: "rgba(27,31,29,0.35)",
+	},
+	// The original neutral slate/periwinkle board, given an accent that
+	// actually belongs to it — a clear azure instead of the mismatched
+	// emerald the site used to pair it with.
+	slate: {
+		label: "Slate",
+		swatch: ["#0A0F1A", "#4C7CF0", "#5B6B8C", "#CBD5E8"],
+		accentRgb: "76,124,240",
+		palette: {
+			mode: "dark",
+			background: { default: "#0A0F1A", paper: "#111827" },
+			primary: { main: "#4C7CF0", light: "#7CA0FF", dark: "#2F5BC7", contrastText: "#06122E" },
+			secondary: { main: "#94A3B8", light: "#CBD5E1", dark: "#64748B", contrastText: "#0A0F1A" },
+			success: { main: "#34D399" },
+			error: { main: "#F87171" },
+			warning: { main: "#FBBF24" },
+			text: { primary: "#EAF0FB", secondary: "#94A3B8" },
+			divider: "rgba(148,163,184,0.14)",
+		},
+		board: { light: "#CBD5E8", dark: "#5B6B8C", hintRgb: "230,168,68" },
+		glass: { background: "rgba(255,255,255,0.045)", border: "rgba(255,255,255,0.09)" },
+		glassStrong: { background: "rgba(15,20,32,0.75)", border: "rgba(255,255,255,0.10)" },
+		glowSoft: "0 8px 32px rgba(0,0,0,0.45)",
+		bodyBackground:
+			"radial-gradient(ellipse 80% 50% at 20% -10%, rgba(76,124,240,0.15), transparent), radial-gradient(ellipse 60% 40% at 100% 100%, rgba(148,163,184,0.07), transparent), #0A0F1A",
+		selectionBg: "rgba(76,124,240,0.3)",
+		scrollbarThumb: "rgba(148,163,184,0.25)",
+		scrollbarThumbHover: "rgba(76,124,240,0.5)",
+		inputBackground: "rgba(255,255,255,0.05)",
+		inputBackgroundHover: "rgba(255,255,255,0.07)",
+		inputBorder: "rgba(255,255,255,0.08)",
+		backdrop: "rgba(4,7,14,0.7)",
 	},
 };
 

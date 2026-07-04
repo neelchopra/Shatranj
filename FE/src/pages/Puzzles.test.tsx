@@ -2,9 +2,11 @@ import "@testing-library/jest-dom";
 import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { Provider } from "react-redux";
+import { ThemeProvider } from "@mui/material";
 import { MemoryRouter } from "react-router-dom";
 import { store } from "../app-state/store";
 import { api } from "../api";
+import { buildTheme } from "../theme";
 import Puzzles from "./Puzzles";
 
 jest.mock("../api", () => ({
@@ -40,9 +42,11 @@ const puzzleB = { _id: "puzzle-b", fen: "8/8/8/8/8/8/8/8 w - - 0 1", moves: ["d2
 const renderPage = () =>
 	render(
 		<Provider store={store}>
-			<MemoryRouter>
-				<Puzzles />
-			</MemoryRouter>
+			<ThemeProvider theme={buildTheme("emerald")}>
+				<MemoryRouter>
+					<Puzzles />
+				</MemoryRouter>
+			</ThemeProvider>
 		</Provider>
 	);
 

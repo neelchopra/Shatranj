@@ -5,7 +5,7 @@ import { buildTheme, DEFAULT_THEME_NAME, ThemeName } from "../theme";
 const STORAGE_KEY = "shatranj-theme";
 
 const isThemeName = (value: string | null): value is ThemeName =>
-	value === "emerald" || value === "rosewood" || value === "marble";
+	value === "emerald" || value === "rosewood" || value === "marble" || value === "slate";
 
 const getStoredThemeName = (): ThemeName => {
 	const stored = localStorage.getItem(STORAGE_KEY);
