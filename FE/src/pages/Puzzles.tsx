@@ -49,15 +49,20 @@ const Puzzles = () => {
 
 	const loadPuzzle = useCallback(() => {
 		const requestId = ++puzzleRequestRef.current;
-		setOutcome(null);
-		setAttempt(null);
-		setShowSolution(false);
-		setFoundAfterFail(false);
 		setError("");
 		api
 			.get("/puzzles/next")
 			.then((res) => {
-				if (puzzleRequestRef.current === requestId) setPuzzle(res.data);
+				if (puzzleRequestRef.current !== requestId) return;
+				// Deferred until the new puzzle actually arrives — clearing this
+				// upfront let the board area briefly flip back to a fresh
+				// PuzzleBoard showing the *old*, already-solved puzzle (a visible
+				// flicker) while the fetch for the next one was still in flight.
+				setPuzzle(res.data);
+				setOutcome(null);
+				setAttempt(null);
+				setShowSolution(false);
+				setFoundAfterFail(false);
 			})
 			.catch(() => {
 				if (puzzleRequestRef.current === requestId) setError("Could not load a puzzle right now.");
