@@ -478,6 +478,16 @@ async function main() {
 		finalStats.data
 	);
 
+	const puzzleLb = await axios.get(`${BASE}/users/puzzle-leaderboard`);
+	check(
+		"puzzle leaderboard is public, sorted desc by puzzle_rating, and includes carol",
+		puzzleLb.status === 200 &&
+			Array.isArray(puzzleLb.data) &&
+			puzzleLb.data.every((u, i) => i === 0 || u.puzzle_rating <= puzzleLb.data[i - 1].puzzle_rating) &&
+			puzzleLb.data.some((u) => u.username === "carol" && u.puzzle_rating === failAttempt.data.puzzle_rating),
+		puzzleLb.data
+	);
+
 	alice.close();
 	bob.close();
 	bob2.close();

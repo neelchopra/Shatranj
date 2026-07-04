@@ -92,6 +92,21 @@ router.get("/leaderboard", async (req, res) => {
 });
 
 /**
+ * GET /users/puzzle-leaderboard — top players by puzzle rating (public)
+ */
+router.get("/puzzle-leaderboard", async (req, res) => {
+	try {
+		const users = await User.find()
+			.sort({ puzzle_rating: -1 })
+			.limit(20)
+			.select("username puzzle_rating puzzle_streak best_streak");
+		res.json(users);
+	} catch (err) {
+		res.status(500).json({ message: "Could not load puzzle leaderboard" });
+	}
+});
+
+/**
  * GET /users/search-users?q=<name>
  */
 router.get("/search-users", auth, async (req, res) => {
