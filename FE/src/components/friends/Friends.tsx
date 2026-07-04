@@ -1,5 +1,5 @@
 import React from 'react';
-import { Avatar, Button, Typography, Box, Tooltip } from '@mui/material';
+import { Avatar, Button, Typography, Box, Tooltip, useTheme } from '@mui/material';
 import GlassCard from '../../ui/GlassCard';
 
 export type FriendAction = {
@@ -18,6 +18,7 @@ export interface FriendsProps {
 }
 
 const Friends = (props: FriendsProps) => {
+  const { tokens, palette } = useTheme();
   return (
     <GlassCard
       sx={{
@@ -36,7 +37,7 @@ const Friends = (props: FriendsProps) => {
             width: 52,
             fontSize: '1.4rem',
             fontWeight: 700,
-            background: 'rgba(16,185,129,0.16)',
+            background: `rgba(${tokens.accentRgb},0.16)`,
             color: 'primary.light',
           }}
         >
@@ -52,8 +53,8 @@ const Friends = (props: FriendsProps) => {
                 width: 14,
                 height: 14,
                 borderRadius: '50%',
-                border: '2px solid #12151C',
-                background: props.online ? '#34D399' : '#64748B',
+                border: `2px solid ${palette.background.paper}`,
+                background: props.online ? palette.success.main : palette.secondary.main,
               }}
             />
           </Tooltip>

@@ -7,6 +7,7 @@ import {
 	IconButton,
 	TextField,
 	Tooltip,
+	useTheme,
 } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
@@ -16,9 +17,9 @@ import { socket } from "../socket";
 import GlassCard from "../ui/GlassCard";
 import SegmentedControl from "../ui/SegmentedControl";
 import { fadeUp, pulseRing, staggerContainer } from "../ui/motion";
-import { tokens } from "../theme";
 
 const PlayOnline = () => {
+	const { tokens } = useTheme();
 	const [time, setTime] = useState(5);
 	const [mode, setMode] = useState<"idle" | "searching" | "hosting">("idle");
 	const [hostedRoom, setHostedRoom] = useState("");
@@ -145,7 +146,7 @@ const PlayOnline = () => {
 											position: "absolute",
 											inset: 0,
 											borderRadius: "50%",
-											border: "2px solid rgba(16,185,129,0.6)",
+											border: `2px solid rgba(${tokens.accentRgb},0.6)`,
 										}}
 									/>
 								))}
@@ -157,7 +158,7 @@ const PlayOnline = () => {
 										display: "flex",
 										alignItems: "center",
 										justifyContent: "center",
-										background: "rgba(16,185,129,0.14)",
+										background: `rgba(${tokens.accentRgb},0.14)`,
 										color: "primary.light",
 									}}
 								>
@@ -192,13 +193,13 @@ const PlayOnline = () => {
 									sx={{
 										padding: "12px 24px",
 										borderRadius: "12px",
-										border: "1px dashed rgba(16,185,129,0.5)",
-										background: "rgba(16,185,129,0.06)",
+										border: `1px dashed rgba(${tokens.accentRgb},0.5)`,
+										background: `rgba(${tokens.accentRgb},0.06)`,
 									}}
 								>
 									<Typography
 										sx={{
-											fontFamily: tokens.fontDisplay,
+											fontFamily: tokens.fontMono,
 											fontSize: "1.8rem",
 											fontWeight: 700,
 											letterSpacing: "6px",

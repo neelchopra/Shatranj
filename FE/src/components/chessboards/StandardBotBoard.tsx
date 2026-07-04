@@ -2,13 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Square, Piece } from 'react-chessboard/dist/chessboard/types';
 import { motion, useAnimationControls } from 'framer-motion';
+import { useTheme } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../../app-state/hooks';
 import { setGameState } from '../../app-state/features/gameSlice';
 import { Chess } from 'chess.js';
 import Engine from '../../Engine';
 import { evaluateGame } from '../../utilities/chessResult';
 import { playIllegalSound, soundForMove } from '../../utilities/sounds';
-import { tokens } from '../../theme';
 import { limitsForRating } from '../../utilities/botStrength';
 
 type Props = {
@@ -18,6 +18,7 @@ type Props = {
 }
 
 const StandardBotBoard = (props: Props)=>{
+    const { tokens } = useTheme();
     const dispatch = useAppDispatch();
     const position = useAppSelector((state)=> state.game.gameState.position)
     const [optionSquares,setOptionSquares]=useState({})

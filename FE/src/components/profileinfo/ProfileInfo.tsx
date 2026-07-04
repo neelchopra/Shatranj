@@ -1,8 +1,7 @@
 import * as React from 'react';
-import { Box, Avatar, Typography } from '@mui/material';
+import { Box, Avatar, Typography, useTheme } from '@mui/material';
 import GlassCard from '../../ui/GlassCard';
 import AnimatedNumber from '../../ui/AnimatedNumber';
-import { tokens } from '../../theme';
 
 interface ProfileInfoProps {
     Username: string,
@@ -12,27 +11,31 @@ interface ProfileInfoProps {
     PuzzleRating: number,
 }
 
-const StatTile = ({ label, value }: { label: string; value: number }) => (
-    <Box
-        sx={{
-            padding: '16px 24px',
-            borderRadius: '14px',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            minWidth: 120,
-            textAlign: 'center',
-        }}
-    >
-        <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {label}
-        </Typography>
-        <Typography sx={{ fontFamily: tokens.fontDisplay, fontSize: '2rem', fontWeight: 700, color: 'primary.light' }}>
-            <AnimatedNumber value={value} />
-        </Typography>
-    </Box>
-);
+const StatTile = ({ label, value }: { label: string; value: number }) => {
+    const { tokens } = useTheme();
+    return (
+        <Box
+            sx={{
+                padding: '16px 24px',
+                borderRadius: '14px',
+                background: tokens.glass.background,
+                border: tokens.glass.border,
+                minWidth: 120,
+                textAlign: 'center',
+            }}
+        >
+            <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {label}
+            </Typography>
+            <Typography sx={{ fontFamily: tokens.fontMono, fontSize: '2rem', fontWeight: 700, color: 'primary.light' }}>
+                <AnimatedNumber value={value} />
+            </Typography>
+        </Box>
+    );
+};
 
 const ProfileInfo = (props: ProfileInfoProps) => {
+  const { tokens } = useTheme();
   return (
     <GlassCard
         sx={{
@@ -49,10 +52,10 @@ const ProfileInfo = (props: ProfileInfoProps) => {
                 width: { xs: 80, sm: 110 },
                 fontSize: { xs: '2rem', sm: '2.8rem' },
                 fontWeight: 700,
-                background: 'rgba(16,185,129,0.16)',
+                background: `rgba(${tokens.accentRgb},0.16)`,
                 color: 'primary.light',
-                border: '2px solid rgba(16,185,129,0.4)',
-                boxShadow: '0 0 24px rgba(16,185,129,0.2)',
+                border: `2px solid rgba(${tokens.accentRgb},0.4)`,
+                boxShadow: `0 0 24px rgba(${tokens.accentRgb},0.2)`,
             }}
         >
             {props.Username[0]?.toUpperCase()}

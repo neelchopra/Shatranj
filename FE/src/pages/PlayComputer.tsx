@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Typography from '@mui/material/Typography';
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Slider, TextField } from '@mui/material';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Slider, TextField, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import GlassCard from '../ui/GlassCard';
@@ -14,6 +14,7 @@ const presets = [
 ];
 
 const PlayComputer = () => {
+    const { tokens } = useTheme();
     const navigate = useNavigate();
     const [rating, setRating] = useState(800);
     const [customOpen, setCustomOpen] = useState(false);
@@ -50,9 +51,9 @@ const PlayComputer = () => {
                                     height: '100%',
                                     textAlign: 'center',
                                     ...(selected && {
-                                        borderColor: 'rgba(16,185,129,0.55)',
-                                        boxShadow: '0 0 0 1px rgba(16,185,129,0.35), 0 0 24px rgba(16,185,129,0.25)',
-                                        background: 'rgba(16,185,129,0.07)',
+                                        borderColor: `rgba(${tokens.accentRgb},0.55)`,
+                                        boxShadow: tokens.glowAccent,
+                                        background: `rgba(${tokens.accentRgb},0.07)`,
                                     }),
                                 }}
                             >
@@ -78,9 +79,9 @@ const PlayComputer = () => {
                             height: '100%',
                             textAlign: 'center',
                             ...(!isPreset && {
-                                borderColor: 'rgba(16,185,129,0.55)',
-                                boxShadow: '0 0 0 1px rgba(16,185,129,0.35), 0 0 24px rgba(16,185,129,0.25)',
-                                background: 'rgba(16,185,129,0.07)',
+                                borderColor: `rgba(${tokens.accentRgb},0.55)`,
+                                boxShadow: tokens.glowAccent,
+                                background: `rgba(${tokens.accentRgb},0.07)`,
                             }),
                         }}
                     >

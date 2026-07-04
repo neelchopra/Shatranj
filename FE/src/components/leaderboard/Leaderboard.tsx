@@ -10,10 +10,11 @@ import {
   TableContainer,
   Button,
   Avatar,
+  useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { motion } from "framer-motion";
 import GlassCard from "../../ui/GlassCard";
-import { tokens } from "../../theme";
 
 export type LeaderboardPlayer = {
   _id: string;
@@ -38,15 +39,6 @@ const medallions: Record<number, { color: string; background: string }> = {
   2: { color: "#D97706", background: "rgba(217,119,6,0.15)" },
 };
 
-const headCellSx = {
-  color: "text.secondary",
-  fontSize: "0.75rem",
-  fontWeight: 700,
-  textTransform: "uppercase",
-  letterSpacing: "0.08em",
-  borderBottom: "1px solid rgba(148,163,184,0.12)",
-};
-
 type Props = {
   players: (LeaderboardPlayer | PuzzleLeaderboardPlayer)[];
   variant?: LeaderboardVariant;
@@ -59,7 +51,17 @@ const secondaryStatOf = (player: LeaderboardPlayer | PuzzleLeaderboardPlayer, va
   variant === "puzzles" ? (player as PuzzleLeaderboardPlayer).best_streak : (player as LeaderboardPlayer).number_of_matches;
 
 const Leaderboard = ({ players, variant = "games" }: Props) => {
+  const { tokens, palette } = useTheme();
   const [isViewAll, setIsViewAll] = useState(false);
+
+  const headCellSx = {
+    color: "text.secondary",
+    fontSize: "0.75rem",
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.08em",
+    borderBottom: `1px solid ${palette.divider}`,
+  };
 
   const visible = isViewAll ? players : players.slice(0, 5);
 
@@ -91,8 +93,8 @@ const Leaderboard = ({ players, variant = "games" }: Props) => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05, duration: 0.35, ease: "easeOut" }}
                   sx={{
-                    "&:hover": { background: "rgba(255,255,255,0.03)" },
-                    ...(index === 0 && { borderLeft: "3px solid rgba(16,185,129,0.6)" }),
+                    "&:hover": { background: alpha(palette.text.primary, 0.03) },
+                    ...(index === 0 && { borderLeft: `3px solid rgba(${tokens.accentRgb},0.6)` }),
                   }}
                 >
                   <TableCell>
@@ -122,7 +124,7 @@ const Leaderboard = ({ players, variant = "games" }: Props) => {
                   <TableCell align="right">
                     <Typography
                       sx={{
-                        fontFamily: tokens.fontDisplay,
+                        fontFamily: tokens.fontMono,
                         fontWeight: 700,
                         color: "primary.light",
                         fontVariantNumeric: "tabular-nums",

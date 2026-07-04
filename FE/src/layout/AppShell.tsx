@@ -30,7 +30,7 @@ import { socket } from "../socket";
 import { isSoundMuted, setSoundMuted } from "../utilities/sounds";
 import { useAppDispatch, useAppSelector } from "../app-state/hooks";
 import { logout } from "../app-state/features/userPreferenceSlice";
-import { tokens } from "../theme";
+import ThemeSwitcher from "../components/navbar/ThemeSwitcher";
 
 const TOPBAR_HEIGHT = 64;
 const SIDEBAR_WIDTH = 240;
@@ -118,8 +118,8 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
 											position: "absolute",
 											inset: 0,
 											borderRadius: 10,
-											background: "rgba(16,185,129,0.12)",
-											borderLeft: "3px solid #10B981",
+											background: `rgba(${theme.tokens.accentRgb},0.12)`,
+											borderLeft: `3px solid ${theme.palette.primary.main}`,
 										}}
 									/>
 								)}
@@ -149,10 +149,10 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
 				elevation={0}
 				sx={{
 					height: `${TOPBAR_HEIGHT}px`,
-					background: tokens.glassStrong.background,
-					backdropFilter: tokens.glassStrong.blur,
-					WebkitBackdropFilter: tokens.glassStrong.blur,
-					borderBottom: "1px solid rgba(148,163,184,0.12)",
+					background: theme.tokens.glassStrong.background,
+					backdropFilter: theme.tokens.glassStrong.blur,
+					WebkitBackdropFilter: theme.tokens.glassStrong.blur,
+					borderBottom: `1px solid ${theme.palette.divider}`,
 					zIndex: (t) => t.zIndex.drawer + 1,
 				}}
 			>
@@ -169,11 +169,11 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
 					<NavLink to="/" style={{ textDecoration: "none" }}>
 						<Typography
 							sx={{
-								fontFamily: tokens.fontDisplay,
+								fontFamily: theme.tokens.fontDisplay,
 								fontWeight: 700,
 								fontSize: "1.5rem",
 								letterSpacing: "-0.02em",
-								background: "linear-gradient(90deg, #F1F5F9 30%, #34D399)",
+								background: `linear-gradient(90deg, ${theme.palette.text.primary} 30%, ${theme.palette.primary.light})`,
 								backgroundClip: "text",
 								WebkitBackgroundClip: "text",
 								WebkitTextFillColor: "transparent",
@@ -183,39 +183,46 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
 						</Typography>
 					</NavLink>
 					<Box sx={{ flexGrow: 1 }} />
+					<ThemeSwitcher />
 					<IconButton onClick={toggleMuted} aria-label={muted ? "unmute sounds" : "mute sounds"} sx={{ marginRight: "4px" }}>
 						{muted ? <VolumeOffIcon /> : <VolumeUpIcon />}
 					</IconButton>
 					{user ? (
-						<Box sx={{ display: "flex", alignItems: "center", gap: "12px" }}>
-							<Chip
-								label={
-									<Box sx={{ display: "flex", gap: "6px", alignItems: "center" }}>
-										<Typography sx={{ fontWeight: 600, fontSize: "0.9rem" }}>
-											{user.username}
-										</Typography>
-										<Typography
-											sx={{
-												fontWeight: 700,
-												fontSize: "0.9rem",
-												color: "primary.light",
-												fontFamily: tokens.fontDisplay,
-											}}
-										>
-											<AnimatedNumber value={user.rating} />
-										</Typography>
-									</Box>
-								}
-								sx={{
-									background: "rgba(16,185,129,0.08)",
-									border: "1px solid rgba(16,185,129,0.25)",
-									height: "36px",
-								}}
-							/>
-							<Button variant="outlined" size="small" onClick={handleLogout}>
-								Logout
-							</Button>
-						</Box>
+						// Full username/rating + Logout only where the toolbar has room to
+						// breathe. On mobile the same info (and Logout) already live in the
+						// hamburger drawer via MenuBox — duplicating them here is what was
+						// overflowing the fixed AppBar off the right edge of the screen.
+						isDesktop && (
+							<Box sx={{ display: "flex", alignItems: "center", gap: "12px" }}>
+								<Chip
+									label={
+										<Box sx={{ display: "flex", gap: "6px", alignItems: "center" }}>
+											<Typography sx={{ fontWeight: 600, fontSize: "0.9rem" }}>
+												{user.username}
+											</Typography>
+											<Typography
+												sx={{
+													fontWeight: 700,
+													fontSize: "0.9rem",
+													color: "primary.light",
+													fontFamily: theme.tokens.fontMono,
+												}}
+											>
+												<AnimatedNumber value={user.rating} />
+											</Typography>
+										</Box>
+									}
+									sx={{
+										background: `rgba(${theme.tokens.accentRgb},0.08)`,
+										border: `1px solid rgba(${theme.tokens.accentRgb},0.25)`,
+										height: "36px",
+									}}
+								/>
+								<Button variant="outlined" size="small" onClick={handleLogout}>
+									Logout
+								</Button>
+							</Box>
+						)
 					) : (
 						<Button variant="contained" onClick={() => setLoginOpen(true)}>
 							Login
@@ -234,10 +241,10 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
 					flexShrink: { md: 0 },
 					"& .MuiDrawer-paper": {
 						width: SIDEBAR_WIDTH,
-						background: isDesktop ? "transparent" : tokens.glassStrong.background,
-						backdropFilter: tokens.glassStrong.blur,
-						WebkitBackdropFilter: tokens.glassStrong.blur,
-						borderRight: "1px solid rgba(148,163,184,0.12)",
+						background: isDesktop ? "transparent" : theme.tokens.glassStrong.background,
+						backdropFilter: theme.tokens.glassStrong.blur,
+						WebkitBackdropFilter: theme.tokens.glassStrong.blur,
+						borderRight: `1px solid ${theme.palette.divider}`,
 						boxSizing: "border-box",
 					},
 				}}

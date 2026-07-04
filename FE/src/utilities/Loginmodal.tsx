@@ -6,6 +6,7 @@ import {
   TextField,
   InputAdornment,
   IconButton,
+  useTheme,
 } from '@mui/material';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import Visibility from '@mui/icons-material/Visibility';
@@ -15,12 +16,12 @@ import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import { motion } from 'framer-motion';
 import { useAppDispatch, useAppSelector } from '../app-state/hooks';
 import { loginUser, registerUser } from '../app-state/features/userPreferenceSlice';
-import { tokens } from '../theme';
 
 const isValidEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
 
 const Loginmodal = forwardRef<HTMLDivElement, { onClose?: () => void }>(
   ({ onClose }, ref) => {
+    const { tokens } = useTheme();
     const [tab, setTab] = useState<'login' | 'register'>('login');
     const [showPassword, setShowPassword] = useState(false);
     const [formError, setFormError] = useState('');
@@ -112,8 +113,8 @@ const Loginmodal = forwardRef<HTMLDivElement, { onClose?: () => void }>(
             gap: '4px',
             padding: '4px',
             borderRadius: '12px',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: tokens.glass.background,
+            border: tokens.glass.border,
             marginBottom: '24px',
           }}
         >
@@ -139,8 +140,8 @@ const Loginmodal = forwardRef<HTMLDivElement, { onClose?: () => void }>(
                     position: 'absolute',
                     inset: 0,
                     borderRadius: 9,
-                    background: 'rgba(16,185,129,0.16)',
-                    border: '1px solid rgba(16,185,129,0.4)',
+                    background: `rgba(${tokens.accentRgb},0.16)`,
+                    border: `1px solid rgba(${tokens.accentRgb},0.4)`,
                   }}
                 />
               )}

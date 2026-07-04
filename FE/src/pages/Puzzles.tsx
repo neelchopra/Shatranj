@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Box, Button, Chip, Typography } from "@mui/material";
+import { Box, Button, Chip, Typography, useTheme } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import { motion } from "framer-motion";
@@ -11,7 +12,6 @@ import useBoardWidth from "../hooks/useBoardWidth";
 import PuzzleBoard, { PuzzleData, PuzzleOutcome } from "../components/chessboards/PuzzleBoard";
 import ReviewBoard, { ReviewControls } from "../components/chessboards/ReviewBoard";
 import { fadeUp, staggerContainer } from "../ui/motion";
-import { tokens } from "../theme";
 import { useAppDispatch, useAppSelector } from "../app-state/hooks";
 import { updatePuzzleStats } from "../app-state/features/userPreferenceSlice";
 import { pgnToPlies } from "../utilities/pgnPlies";
@@ -34,6 +34,7 @@ const formatSanLine = (sans: string[]) => {
 };
 
 const Puzzles = () => {
+	const { tokens, palette } = useTheme();
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
 	const user = useAppSelector((state) => state.userPreference.user);
@@ -116,7 +117,7 @@ const Puzzles = () => {
 								borderRadius: "12px",
 								overflow: "hidden",
 								touchAction: "manipulation",
-								border: "1px solid rgba(255,255,255,0.08)",
+								border: tokens.glass.border,
 								boxShadow: tokens.glowSoft,
 								display: "inline-block",
 								padding: "12px",
@@ -158,7 +159,7 @@ const Puzzles = () => {
 						<Box sx={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" }}>
 							<Chip
 								label={`Puzzle rating ${puzzle.rating}`}
-								sx={{ background: "rgba(255,255,255,0.06)", color: "text.secondary" }}
+								sx={{ background: tokens.inputBackground, color: "text.secondary" }}
 							/>
 							{!outcome && (
 								<Chip
@@ -176,7 +177,7 @@ const Puzzles = () => {
 										/>
 									}
 									label={solverColor === "white" ? "White to move" : "Black to move"}
-									sx={{ background: "rgba(255,255,255,0.06)", color: "text.primary", fontWeight: 600 }}
+									sx={{ background: tokens.inputBackground, color: "text.primary", fontWeight: 600 }}
 								/>
 							)}
 						</Box>
@@ -210,7 +211,7 @@ const Puzzles = () => {
 							<Typography sx={{ color: "text.secondary", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>
 								Puzzle rating
 							</Typography>
-							<Typography sx={{ fontFamily: tokens.fontDisplay, fontSize: "1.8rem", fontWeight: 700 }}>
+							<Typography sx={{ fontFamily: tokens.fontMono, fontSize: "1.8rem", fontWeight: 600 }}>
 								<AnimatedNumber value={attempt.puzzle_rating} />{" "}
 								<Box component="span" sx={{ fontSize: "1rem", color: attempt.delta >= 0 ? "success.main" : "error.main" }}>
 									({attempt.delta >= 0 ? "+" : ""}{attempt.delta})
@@ -229,14 +230,14 @@ const Puzzles = () => {
 					)}
 
 					{outcome?.mistake && (showReview || foundAfterFail) && (
-						<Box sx={{ marginBottom: "16px", padding: "12px 14px", borderRadius: "10px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.25)" }}>
+						<Box sx={{ marginBottom: "16px", padding: "12px 14px", borderRadius: "10px", background: alpha(palette.error.main, 0.08), border: `1px solid ${alpha(palette.error.main, 0.25)}` }}>
 							<Typography sx={{ fontSize: "0.9rem" }}>
 								You played{" "}
-								<Box component="span" sx={{ fontWeight: 700, color: "error.main" }}>
+								<Box component="span" sx={{ fontFamily: tokens.fontMono, fontWeight: 700, color: "error.main" }}>
 									{outcome.mistake.playedSan || "an illegal move"}
 								</Box>{" "}
 								— the winning move was{" "}
-								<Box component="span" sx={{ fontWeight: 700, color: "success.main" }}>
+								<Box component="span" sx={{ fontFamily: tokens.fontMono, fontWeight: 700, color: "success.main" }}>
 									{outcome.mistake.expectedSan}
 								</Box>
 								.
@@ -249,7 +250,7 @@ const Puzzles = () => {
 							<Typography sx={{ color: "text.secondary", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
 								Full solution
 							</Typography>
-							<Typography sx={{ fontFamily: "monospace", fontSize: "0.9rem", color: "text.secondary", lineHeight: 1.7 }}>
+							<Typography sx={{ fontFamily: tokens.fontMono, fontSize: "0.9rem", color: "text.secondary", lineHeight: 1.7 }}>
 								{formatSanLine(outcome.solutionSan)}
 							</Typography>
 						</Box>

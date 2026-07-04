@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, useTheme } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { motion } from "framer-motion";
 import { useAppSelector } from "../app-state/hooks";
@@ -7,6 +7,7 @@ import GlassCard from "../ui/GlassCard";
 import { fadeUp } from "../ui/motion";
 
 const RequireAuth = ({ children }: { children: JSX.Element }) => {
+	const { tokens } = useTheme();
 	const user = useAppSelector((state) => state.userPreference.user);
 
 	if (!user) {
@@ -22,7 +23,7 @@ const RequireAuth = ({ children }: { children: JSX.Element }) => {
 								display: "flex",
 								alignItems: "center",
 								justifyContent: "center",
-								background: "rgba(16,185,129,0.12)",
+								background: `rgba(${tokens.accentRgb},0.12)`,
 								color: "primary.light",
 								margin: "0 auto 20px auto",
 							}}

@@ -10,11 +10,12 @@ import ClickAwayListener from '@mui/material/ClickAwayListener';
 import Box from '@mui/material/Box/Box';
 import Avatar from '@mui/material/Avatar';
 import MenuItem from '@mui/material/MenuItem';
+import { useTheme } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../../app-state/hooks';
 import { logout } from '../../app-state/features/userPreferenceSlice';
-import { tokens } from '../../theme';
 
 const MenuBox = () => {
+  const { tokens } = useTheme();
   const user = useAppSelector((state) => state.userPreference.user);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -76,9 +77,9 @@ const MenuBox = () => {
           justifyContent: 'flex-start',
           padding: '10px 12px',
           borderRadius: '12px',
-          border: '1px solid rgba(255,255,255,0.08)',
-          background: 'rgba(255,255,255,0.03)',
-          '&:hover': { background: 'rgba(255,255,255,0.06)' },
+          border: tokens.glass.border,
+          background: tokens.glass.background,
+          '&:hover': { background: tokens.inputBackgroundHover },
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
@@ -86,7 +87,7 @@ const MenuBox = () => {
             sx={{
               height: 40,
               width: 40,
-              background: 'rgba(16,185,129,0.2)',
+              background: `rgba(${tokens.accentRgb},0.2)`,
               color: 'primary.light',
               fontWeight: 700,
             }}

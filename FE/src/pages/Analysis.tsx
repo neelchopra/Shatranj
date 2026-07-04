@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { Box, IconButton, Typography } from "@mui/material";
+import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
@@ -12,7 +12,6 @@ import { motion } from "framer-motion";
 import Engine from "../Engine";
 import GlassCard from "../ui/GlassCard";
 import useBoardWidth from "../hooks/useBoardWidth";
-import { tokens } from "../theme";
 import { fadeUp } from "../ui/motion";
 import { pgnToPlies } from "../utilities/pgnPlies";
 
@@ -34,6 +33,7 @@ const uciToSan = (fen: string, uci: string) => {
 };
 
 const Analysis = () => {
+	const { tokens, palette } = useTheme();
 	const location = useLocation();
 	const navState = location.state as { pgn?: string; orientation?: "white" | "black" } | null;
 	const pgn = navState?.pgn;
@@ -119,16 +119,16 @@ const Analysis = () => {
 							width: 28,
 							borderRadius: "8px",
 							overflow: "hidden",
-							background: "#2a2f3a",
+							background: tokens.inputBackground,
 							display: "flex",
 							flexDirection: "column-reverse",
-							border: "1px solid rgba(255,255,255,0.08)",
+							border: tokens.glass.border,
 						}}
 					>
 						<motion.div
 							animate={{ height: `${barFraction * 100}%` }}
 							transition={{ duration: 0.3 }}
-							style={{ background: "#F1F5F9", width: "100%" }}
+							style={{ background: palette.text.primary, width: "100%" }}
 						/>
 					</Box>
 					<Box ref={boardContainerRef} sx={{ flexGrow: 1, minWidth: 0, display: "flex", justifyContent: "center" }}>
@@ -138,7 +138,7 @@ const Analysis = () => {
 									borderRadius: "12px",
 									overflow: "hidden",
 									touchAction: "manipulation",
-									border: "1px solid rgba(255,255,255,0.08)",
+									border: tokens.glass.border,
 									boxShadow: tokens.glowSoft,
 								}}
 							>
@@ -159,13 +159,13 @@ const Analysis = () => {
 					<Typography sx={{ color: "text.secondary", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>
 						Evaluation
 					</Typography>
-					<Typography sx={{ fontFamily: tokens.fontDisplay, fontSize: "2rem", fontWeight: 700, marginBottom: "16px" }}>
+					<Typography sx={{ fontFamily: tokens.fontMono, fontSize: "2rem", fontWeight: 700, marginBottom: "16px" }}>
 						{evalLabel}
 					</Typography>
 					<Typography sx={{ color: "text.secondary", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>
 						Engine suggests
 					</Typography>
-					<Typography sx={{ fontFamily: tokens.fontDisplay, fontSize: "1.3rem", fontWeight: 700, marginBottom: "24px" }}>
+					<Typography sx={{ fontFamily: tokens.fontMono, fontSize: "1.3rem", fontWeight: 700, marginBottom: "24px" }}>
 						{bestMoveSan || "…"}
 					</Typography>
 
@@ -189,7 +189,7 @@ const Analysis = () => {
 							<SwapVertIcon />
 						</IconButton>
 					</Box>
-					<Typography sx={{ textAlign: "center", color: "text.secondary", marginTop: "12px", fontSize: "0.9rem" }}>
+					<Typography sx={{ fontFamily: tokens.fontMono, textAlign: "center", color: "text.secondary", marginTop: "12px", fontSize: "0.9rem" }}>
 						{index === 0 ? "Starting position" : `${index}. ${plies[index - 1].san}`}
 					</Typography>
 				</GlassCard>

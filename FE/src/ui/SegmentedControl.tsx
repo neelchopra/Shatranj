@@ -1,7 +1,6 @@
 import React from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, useTheme } from "@mui/material";
 import { motion } from "framer-motion";
-import { tokens } from "../theme";
 
 type Option<T> = { label: string; value: T };
 
@@ -22,6 +21,7 @@ function SegmentedControl<T extends string | number>({
 	onChange,
 	layoutId = "segmented-pill",
 }: Props<T>) {
+	const { tokens } = useTheme();
 	return (
 		<Box
 			sx={{
@@ -29,8 +29,8 @@ function SegmentedControl<T extends string | number>({
 				gap: "4px",
 				padding: "4px",
 				borderRadius: "12px",
-				background: "rgba(255,255,255,0.04)",
-				border: "1px solid rgba(255,255,255,0.08)",
+				background: tokens.glass.background,
+				border: tokens.glass.border,
 			}}
 		>
 			{options.map((option) => {
@@ -55,8 +55,8 @@ function SegmentedControl<T extends string | number>({
 									position: "absolute",
 									inset: 0,
 									borderRadius: 9,
-									background: "rgba(16,185,129,0.16)",
-									border: "1px solid rgba(16,185,129,0.4)",
+									background: `rgba(${tokens.accentRgb},0.16)`,
+									border: `1px solid rgba(${tokens.accentRgb},0.4)`,
 									boxShadow: tokens.glowAccent,
 								}}
 							/>

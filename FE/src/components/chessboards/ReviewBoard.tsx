@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { Chessboard } from "react-chessboard";
-import { Box, IconButton, Typography } from "@mui/material";
+import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
-import { tokens } from "../../theme";
 import { Ply } from "../../utilities/pgnPlies";
 
 type Props = {
@@ -39,7 +38,9 @@ export const ReviewControls = ({
 	onNext: () => void;
 	onLast: () => void;
 	placeholder?: boolean;
-}) => (
+}) => {
+	const { tokens } = useTheme();
+	return (
 	<Box sx={{ visibility: placeholder ? "hidden" : "visible" }} aria-hidden={placeholder}>
 		<Box sx={{ display: "flex", justifyContent: "center", gap: "4px", marginTop: "12px" }}>
 			<IconButton size="small" onClick={onFirst} disabled={placeholder || index === 0}>
@@ -55,14 +56,16 @@ export const ReviewControls = ({
 				<SkipNextIcon />
 			</IconButton>
 		</Box>
-		<Typography sx={{ textAlign: "center", color: "text.secondary", marginTop: "6px", fontSize: "0.85rem" }}>
+		<Typography sx={{ fontFamily: tokens.fontMono, textAlign: "center", color: "text.secondary", marginTop: "6px", fontSize: "0.85rem" }}>
 			{label || " "}
 		</Typography>
 	</Box>
-);
+	);
+};
 
 /** Read-only step-through board — Back/Forward through a fixed move list, no engine. */
 const ReviewBoard = ({ plies, boardWidth, orientation }: Props) => {
+	const { tokens } = useTheme();
 	const [index, setIndex] = useState(plies.length); // start at the final position
 
 	if (plies.length === 0) return null;

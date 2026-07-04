@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Chip, Typography } from '@mui/material';
+import { Box, Chip, Typography, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import GlassCard from '../../ui/GlassCard';
 
 export interface RecentGameProps {
@@ -11,13 +12,13 @@ export interface RecentGameProps {
     date: string,
 }
 
-const outcomeStyles: Record<string, { color: string; background: string }> = {
-    win: { color: '#34D399', background: 'rgba(52,211,153,0.14)' },
-    loss: { color: '#F87171', background: 'rgba(248,113,113,0.14)' },
-    draw: { color: '#94A3B8', background: 'rgba(148,163,184,0.14)' },
-};
-
 const RecentGames = (props: RecentGameProps) => {
+    const { tokens, palette } = useTheme();
+    const outcomeStyles: Record<string, { color: string; background: string }> = {
+        win: { color: palette.success.main, background: alpha(palette.success.main, 0.14) },
+        loss: { color: palette.error.main, background: alpha(palette.error.main, 0.14) },
+        draw: { color: palette.text.secondary, background: alpha(palette.text.secondary, 0.14) },
+    };
     const style = outcomeStyles[props.outcome];
     return (
         <GlassCard
@@ -34,7 +35,7 @@ const RecentGames = (props: RecentGameProps) => {
                 label={props.variant}
                 size="small"
                 sx={{
-                    background: 'rgba(255,255,255,0.06)',
+                    background: tokens.inputBackground,
                     color: 'text.secondary',
                     fontWeight: 600,
                     textTransform: 'capitalize',

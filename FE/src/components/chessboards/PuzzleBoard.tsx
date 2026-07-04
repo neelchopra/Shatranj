@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { Chessboard } from "react-chessboard";
 import { Square, Piece } from "react-chessboard/dist/chessboard/types";
 import { motion, useAnimationControls } from "framer-motion";
+import { useTheme } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { Chess } from "chess.js";
-import { tokens } from "../../theme";
 import { playCaptureSound, playGameEndSound, playIllegalSound, playMoveSound } from "../../utilities/sounds";
 
 export type PuzzleData = {
@@ -36,8 +37,6 @@ type Props = {
 	onLineComplete: () => void;
 };
 
-const WRONG_SQUARE_STYLE = { background: "rgba(248,113,113,0.55)" };
-
 const uci = (move: { from: string; to: string; promotion?: string }) =>
 	`${move.from}${move.to}${move.promotion || ""}`;
 
@@ -68,6 +67,8 @@ const sanLine = (fen: string, moves: string[]): string[] => replayLine(fen, move
  * are checked against the exact expected UCI move.
  */
 const PuzzleBoard = ({ puzzle, boardWidth, onResult, onLineComplete }: Props) => {
+	const { tokens, palette } = useTheme();
+	const wrongSquareStyle = { background: alpha(palette.error.main, 0.55) };
 	const chessRef = useRef<Chess | null>(null);
 	const moveIndexRef = useRef(0);
 	const solverMoveCountRef = useRef(0);
@@ -171,7 +172,7 @@ const PuzzleBoard = ({ puzzle, boardWidth, onResult, onLineComplete }: Props) =>
 			solverMoveCountRef.current += 1;
 			playIllegalSound();
 			setPosition(chess.fen());
-			setWrongSquares({ [from]: WRONG_SQUARE_STYLE, [to]: WRONG_SQUARE_STYLE });
+			setWrongSquares({ [from]: wrongSquareStyle, [to]: wrongSquareStyle });
 			revertingRef.current = true;
 			if (!failedRef.current) {
 				failedRef.current = true;

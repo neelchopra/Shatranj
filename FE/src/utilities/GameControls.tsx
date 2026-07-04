@@ -1,10 +1,10 @@
 import React from 'react'
 import { useAppDispatch, useAppSelector } from '../app-state/hooks';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { setWinner } from '../app-state/features/gameSlice';
 import { socket } from '../socket';
 import GlassCard from '../ui/GlassCard';
-import { tokens } from '../theme';
 
 type Props = {
     room?: string;
@@ -12,6 +12,7 @@ type Props = {
 }
 
 const GameControls = ({ room, isOnline }: Props) => {
+    const { tokens, palette } = useTheme();
     const pgn = useAppSelector((state)=> state.game.gameState.pgn)
     const opponent = useAppSelector((state)=> state.game.gameState.opponent)
     const isGameOver = useAppSelector((state)=> state.game.gameState.isGameOver)
@@ -57,7 +58,7 @@ const GameControls = ({ room, isOnline }: Props) => {
                     marginBottom: '16px',
                 }}
             >
-                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.9rem', color: 'text.secondary', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                <Typography sx={{ fontFamily: tokens.fontMono, fontSize: '0.9rem', color: 'text.secondary', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                     {pgn || 'No moves yet'}
                 </Typography>
             </Box>
@@ -76,10 +77,10 @@ const GameControls = ({ room, isOnline }: Props) => {
                 disabled={isGameOver}
                 onClick={handleResign}
                 sx={{
-                    background: 'rgba(248,113,113,0.16)',
-                    color: '#F87171',
+                    background: alpha(palette.error.main, 0.16),
+                    color: 'error.main',
                     boxShadow: 'none',
-                    '&:hover': { background: 'rgba(248,113,113,0.26)', boxShadow: 'none' },
+                    '&:hover': { background: alpha(palette.error.main, 0.26), boxShadow: 'none' },
                 }}
             >
                 Resign

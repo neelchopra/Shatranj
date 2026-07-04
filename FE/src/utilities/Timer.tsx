@@ -1,12 +1,11 @@
 import React, { useEffect } from 'react'
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import { useTimer } from 'react-timer-hook';
 import { useAppDispatch, useAppSelector } from '../app-state/hooks';
 import { setWinner } from '../app-state/features/gameSlice';
-import { tokens } from '../theme';
 
 interface timerProps {
     avatar: any,
@@ -19,6 +18,7 @@ interface timerProps {
 const pad = (n: number) => String(n).padStart(2, '0');
 
 const Timer = (props:timerProps) => {
+    const { tokens } = useTheme();
     const dispatch = useAppDispatch()
     const {name,rating,expiryTimestamp,player}=props;
     // Flag fall: the player whose clock ran out LOSES — the other side wins.
@@ -51,7 +51,7 @@ const Timer = (props:timerProps) => {
                     margin: '10px 0',
                     borderRadius: `${tokens.radius.md}px`,
                     background: tokens.glass.background,
-                    border: isActive ? '1px solid rgba(16,185,129,0.5)' : tokens.glass.border,
+                    border: isActive ? `1px solid rgba(${tokens.accentRgb},0.5)` : tokens.glass.border,
                     backdropFilter: tokens.glass.blur,
                     boxShadow: isActive ? tokens.glowAccent : 'none',
                     transition: 'border-color .2s ease, box-shadow .2s ease',
@@ -62,7 +62,7 @@ const Timer = (props:timerProps) => {
                         sx={{
                             width: 36,
                             height: 36,
-                            background: 'rgba(16,185,129,0.16)',
+                            background: `rgba(${tokens.accentRgb},0.16)`,
                             color: 'primary.light',
                             fontWeight: 700,
                         }}
@@ -84,13 +84,13 @@ const Timer = (props:timerProps) => {
                     sx={{
                         padding: '6px 16px',
                         borderRadius: '8px',
-                        background: 'rgba(255,255,255,0.05)',
+                        background: tokens.inputBackground,
                     }}
                 >
                     <Typography
                         sx={{
-                            fontFamily: tokens.fontDisplay,
-                            fontWeight: 700,
+                            fontFamily: tokens.fontMono,
+                            fontWeight: 600,
                             fontSize: '1.2rem',
                             fontVariantNumeric: 'tabular-nums',
                             color: isActive ? 'primary.light' : 'text.primary',

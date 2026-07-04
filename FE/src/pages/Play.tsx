@@ -1,30 +1,31 @@
 import React from 'react';
 import Typography from '@mui/material/Typography';
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
-import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import GlassCard from '../ui/GlassCard';
 import { fadeUp, staggerContainer } from '../ui/motion';
 
+// Real chess glyphs instead of generic app iconography — a king facing a
+// king reads as "an opponent"; a lone knight reads as "something calculating".
 const modes = [
     {
         title: 'Online',
         desc: 'Play a rated game against a random opponent, or create a private room and invite a friend with a code. 5, 10 and 15 minute time controls.',
         to: '/play/online',
-        icon: <PublicOutlinedIcon sx={{ fontSize: 30 }} />,
+        glyph: '♚♔',
     },
     {
         title: 'vs Computer',
         desc: 'Practice against Stockfish at three difficulty levels. No account needed — jump straight into a game.',
         to: '/play/computer',
-        icon: <SmartToyOutlinedIcon sx={{ fontSize: 30 }} />,
+        glyph: '♞',
     },
 ];
 
 const Play = () => {
+    const { tokens } = useTheme();
     return (
         <motion.div variants={staggerContainer} initial="initial" animate="animate">
             <motion.div variants={fadeUp}>
@@ -52,12 +53,15 @@ const Play = () => {
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        background: 'rgba(16,185,129,0.12)',
+                                        background: `rgba(${tokens.accentRgb},0.12)`,
                                         color: 'primary.light',
                                         marginBottom: '20px',
+                                        fontFamily: tokens.fontDisplay,
+                                        fontSize: '26px',
+                                        letterSpacing: '-2px',
                                     }}
                                 >
-                                    {mode.icon}
+                                    {mode.glyph}
                                 </Box>
                                 <Typography variant="h3" sx={{ marginBottom: '12px' }}>
                                     {mode.title}
