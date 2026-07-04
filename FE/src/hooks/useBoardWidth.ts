@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useState } from "react";
+import { RefObject, useLayoutEffect, useState } from "react";
 
 /**
  * Measures a container and returns a square board size that fits both the
@@ -7,33 +7,33 @@ import { RefObject, useEffect, useState } from "react";
 const useBoardWidth = (ref: RefObject<HTMLElement>): number => {
 	const [width, setWidth] = useState(0);
 
-	useEffect(() => {
+	// useLayoutEffect (not useEffect) runs synchronously after the DOM commits
+	// but before the browser paints — measuring here means the very first
+	// frame already shows the correct size. A useEffect + delay/debounce here
+	// instead means the board renders invisible (boardWidth stays 0) for that
+	// delay, then suddenly pops in at full size once it fires — a large
+	// element abruptly appearing and growing reads as the page "zooming in",
+	// which is exactly what a delayed initial measurement caused.
+	useLayoutEffect(() => {
 		const element = ref.current;
 		if (!element) return;
 
-		let debounceTimer: ReturnType<typeof setTimeout>;
-
 		const measure = () => {
 			const containerWidth = element.getBoundingClientRect().width;
-			// visualViewport is a more accurate read of the visible area than
-			// innerHeight on mobile, though both shift as browser chrome resizes.
 			const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
 			setWidth(Math.floor(Math.min(containerWidth, viewportHeight * 0.72)));
 		};
 
-		const scheduleMeasure = (delay: number) => {
+		measure();
+
+		// Later resizes (rotation, real address-bar show/hide) are debounced so
+		// a burst of events settles into a single re-measurement instead of
+		// several visible jumps.
+		let debounceTimer: ReturnType<typeof setTimeout>;
+		const onResize = () => {
 			clearTimeout(debounceTimer);
-			debounceTimer = setTimeout(measure, delay);
+			debounceTimer = setTimeout(measure, 120);
 		};
-
-		const onResize = () => scheduleMeasure(120);
-
-		// Mobile browsers report a shorter innerHeight while the address bar is
-		// still visible, then it grows once the bar auto-hides a moment after
-		// load — measuring immediately would size the board small, then visibly
-		// grow it seconds later, which reads as the page "zooming in". Waiting
-		// for that to settle before the first measurement avoids the jump.
-		scheduleMeasure(300);
 
 		const observer = new ResizeObserver(onResize);
 		observer.observe(element);
