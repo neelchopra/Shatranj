@@ -134,6 +134,7 @@ const Analysis = () => {
 								sx={{
 									borderRadius: "12px",
 									overflow: "hidden",
+									touchAction: "manipulation",
 									border: "1px solid rgba(255,255,255,0.08)",
 									boxShadow: tokens.glowSoft,
 								}}

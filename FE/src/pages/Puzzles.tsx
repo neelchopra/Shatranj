@@ -12,7 +12,7 @@ import PuzzleBoard, { PuzzleData, PuzzleOutcome } from "../components/chessboard
 import ReviewBoard from "../components/chessboards/ReviewBoard";
 import { fadeUp, staggerContainer } from "../ui/motion";
 import { tokens } from "../theme";
-import { useAppDispatch } from "../app-state/hooks";
+import { useAppDispatch, useAppSelector } from "../app-state/hooks";
 import { updatePuzzleStats } from "../app-state/features/userPreferenceSlice";
 import { pgnToPlies } from "../utilities/pgnPlies";
 
@@ -36,6 +36,7 @@ const formatSanLine = (sans: string[]) => {
 const Puzzles = () => {
 	const dispatch = useAppDispatch();
 	const navigate = useNavigate();
+	const user = useAppSelector((state) => state.userPreference.user);
 	const [puzzle, setPuzzle] = useState<PuzzleData | null>(null);
 	const [outcome, setOutcome] = useState<PuzzleOutcome | null>(null);
 	const [attempt, setAttempt] = useState<AttemptResult | null>(null);
@@ -58,6 +59,7 @@ const Puzzles = () => {
 	const handleResult = (result: PuzzleOutcome) => {
 		if (!puzzle) return;
 		setOutcome(result);
+		if (!user) return; // guests get solved/failed feedback but no persisted rating
 		api
 			.post(`/puzzles/${puzzle._id}/attempt`, { solved: result.solved })
 			.then((res) => {
@@ -93,6 +95,7 @@ const Puzzles = () => {
 							sx={{
 								borderRadius: "12px",
 								overflow: "hidden",
+								touchAction: "manipulation",
 								border: "1px solid rgba(255,255,255,0.08)",
 								boxShadow: tokens.glowSoft,
 								display: "inline-block",
@@ -154,6 +157,12 @@ const Puzzles = () => {
 								Streak: {attempt.puzzle_streak} (best {attempt.best_streak})
 							</Typography>
 						</Box>
+					)}
+
+					{outcome && !user && (
+						<Typography sx={{ color: "text.secondary", fontSize: "0.85rem", marginBottom: "20px" }}>
+							Log in to save your puzzle rating and streak.
+						</Typography>
 					)}
 
 					{outcome?.mistake && (

@@ -2,19 +2,26 @@ const router = require("express").Router();
 const Puzzle = require("../models/puzzle.model");
 const User = require("../models/user.model");
 const auth = require("../middleware/auth");
+const optionalAuth = require("../middleware/optionalAuth");
 const { eloDelta } = require("../utils/elo");
 
 const PUZZLE_K_FACTOR = 20;
 const RATING_WINDOWS = [150, 300, 600, Infinity];
+const GUEST_DEFAULT_RATING = 1200;
 
 /**
  * GET /puzzles/next — one puzzle near the user's current puzzle rating.
+ * Works for guests too (targets a default rating); only logged-in users
+ * get puzzles centered on their real puzzle_rating.
  * Widens the rating window if the narrow bands don't have enough puzzles.
  */
-router.get("/next", auth, async (req, res) => {
+router.get("/next", optionalAuth, async (req, res) => {
 	try {
-		const user = await User.findById(req.userId).select("puzzle_rating");
-		const target = user.puzzle_rating;
+		let target = GUEST_DEFAULT_RATING;
+		if (req.userId) {
+			const user = await User.findById(req.userId).select("puzzle_rating");
+			if (user) target = user.puzzle_rating;
+		}
 
 		for (const window of RATING_WINDOWS) {
 			const match =

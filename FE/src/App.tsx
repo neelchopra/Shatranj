@@ -40,7 +40,7 @@ function App() {
               <Route path="/play/computer/game" element={<StandardBotGame/>}/>
             </Route>
             <Route path="/analysis" element={<Analysis/>}/>
-            <Route path="/puzzles" element={<RequireAuth><Puzzles/></RequireAuth>}/>
+            <Route path="/puzzles" element={<Puzzles/>}/>
             <Route path="/leaderboard" element={<LeaderboardPage/>}/>
             <Route path="/friends" element={<RequireAuth><FriendsPage/></RequireAuth>}/>
             <Route path="/my-account" element={<RequireAuth><MyAccount/></RequireAuth>}/>

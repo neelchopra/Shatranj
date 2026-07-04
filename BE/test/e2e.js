@@ -419,8 +419,22 @@ async function main() {
 
 	// ---------- Puzzles ----------
 	console.log("\n== Puzzles ==");
-	const noAuthPuzzle = await axios.get(`${BASE}/puzzles/next`, { validateStatus: () => true });
-	check("puzzles require auth -> 401", noAuthPuzzle.status === 401);
+	const guestPuzzle = await axios.get(`${BASE}/puzzles/next`, { validateStatus: () => true });
+	check(
+		"guests can fetch a puzzle (targets the default 1200 rating)",
+		guestPuzzle.status === 200 && guestPuzzle.data.fen && Math.abs(guestPuzzle.data.rating - 1200) <= 700,
+		guestPuzzle.data
+	);
+
+	const noAuthAttempt = await axios.post(
+		`${BASE}/puzzles/${guestPuzzle.data._id}/attempt`,
+		{ solved: true },
+		{ validateStatus: () => true }
+	);
+	check("attempts require auth -> 401", noAuthAttempt.status === 401);
+
+	const noAuthStats = await axios.get(`${BASE}/puzzles/stats`, { validateStatus: () => true });
+	check("stats require auth -> 401", noAuthStats.status === 401);
 
 	const initialStats = await axios.get(`${BASE}/puzzles/stats`, auth(carolToken));
 	check("fresh user starts at puzzle_rating 1200", initialStats.data.puzzle_rating === 1200, initialStats.data);
