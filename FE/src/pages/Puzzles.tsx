@@ -46,6 +46,10 @@ const Puzzles = () => {
 	const [foundAfterFail, setFoundAfterFail] = useState(false);
 	const boardContainerRef = useRef<HTMLDivElement>(null);
 	const boardWidth = useBoardWidth(boardContainerRef);
+	// The frame below adds 12px of padding on each side — boardWidth is the
+	// measured *container* size, so the board itself must be smaller than
+	// that or the padding pushes the frame past the container's right edge.
+	const innerBoardWidth = Math.max(0, boardWidth - 24);
 	const puzzleRequestRef = useRef(0);
 
 	const loadPuzzle = useCallback(() => {
@@ -126,7 +130,7 @@ const Puzzles = () => {
 							{showReview ? (
 								<ReviewBoard
 									plies={pgnToPlies(outcome!.solutionPgn)}
-									boardWidth={boardWidth}
+									boardWidth={innerBoardWidth}
 									orientation={solverColor}
 								/>
 							) : (
@@ -134,7 +138,7 @@ const Puzzles = () => {
 									<PuzzleBoard
 										key={puzzle._id}
 										puzzle={puzzle}
-										boardWidth={boardWidth}
+										boardWidth={innerBoardWidth}
 										onResult={handleResult}
 										onLineComplete={() => setFoundAfterFail(true)}
 									/>
